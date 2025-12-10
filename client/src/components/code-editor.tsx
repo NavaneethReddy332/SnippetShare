@@ -98,7 +98,7 @@ export function CodeEditor({
             {/* Line Numbers */}
             <div className="flex-none w-10 py-2 text-right pr-2 text-xs text-muted-foreground/30 select-none border-r border-white/5 bg-editor-gutter-bg font-mono">
               {lineNumbers.map((num) => (
-                <div key={num} className="h-5 leading-5">{num}</div>
+                <div key={num} style={{ height: '20px', lineHeight: '20px' }}>{num}</div>
               ))}
             </div>
             
@@ -108,8 +108,11 @@ export function CodeEditor({
               onChange={handleChange}
               onPaste={handlePaste}
               spellCheck={false}
-              className="flex-1 p-2 bg-transparent text-[#e0e0e0] outline-none resize-none h-full font-mono text-xs leading-5 tab-4 caret-primary selection:bg-primary/20"
-              style={{ tabSize: 2 }}
+              autoComplete="off"
+              autoCorrect="off"
+              autoCapitalize="off"
+              className="flex-1 p-2 bg-transparent text-[#e0e0e0] outline-none resize-none font-mono text-xs caret-primary selection:bg-primary/20 whitespace-pre overflow-auto"
+              style={{ tabSize: 2, lineHeight: '20px', minHeight: '100%' }}
               placeholder="// Code here..."
             />
           </div>
