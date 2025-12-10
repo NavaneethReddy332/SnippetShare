@@ -45,6 +45,16 @@ export const api = {
       });
       if (!res.ok) throw new Error("Failed to delete snippet");
     },
+    
+    updateTitle: async (id: string, title: string): Promise<Snippet> => {
+      const res = await fetch(`/api/snippets/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title }),
+      });
+      if (!res.ok) throw new Error("Failed to update snippet");
+      return res.json();
+    },
   },
   
   projects: {

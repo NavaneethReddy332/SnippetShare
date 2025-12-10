@@ -18,6 +18,7 @@ export interface IStorage {
   getSnippets(): Promise<Snippet[]>;
   getSnippet(id: string): Promise<Snippet | undefined>;
   createSnippet(snippet: InsertSnippet): Promise<Snippet>;
+  updateSnippetTitle(id: string, title: string): Promise<Snippet | undefined>;
   deleteSnippet(id: string): Promise<void>;
   incrementSnippetViews(id: string): Promise<void>;
   
@@ -159,6 +160,16 @@ export default function App() {
     };
     this.snippets.set(id, snippet);
     return snippet;
+  }
+
+  async updateSnippetTitle(id: string, title: string): Promise<Snippet | undefined> {
+    const snippet = this.snippets.get(id);
+    if (snippet) {
+      snippet.title = title;
+      this.snippets.set(id, snippet);
+      return snippet;
+    }
+    return undefined;
   }
 
   async deleteSnippet(id: string): Promise<void> {

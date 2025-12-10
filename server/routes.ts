@@ -45,6 +45,22 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/snippets/:id", async (req, res) => {
+    try {
+      const { title } = req.body;
+      if (!title || typeof title !== 'string') {
+        return res.status(400).json({ error: "Title is required" });
+      }
+      const snippet = await storage.updateSnippetTitle(req.params.id, title);
+      if (!snippet) {
+        return res.status(404).json({ error: "Snippet not found" });
+      }
+      res.json(snippet);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update snippet" });
+    }
+  });
+
   app.delete("/api/snippets/:id", async (req, res) => {
     try {
       await storage.deleteSnippet(req.params.id);
