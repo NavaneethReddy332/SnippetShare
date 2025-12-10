@@ -1,0 +1,87 @@
+Project: Premium Code Snippet Sharing Platform
+
+A sleek, minimalistic platform where users can create, share, and manage code snippets with a professional, futuristic feel. The platform emphasizes speed, usability, and a premium design aesthetic.
+
+1. Design & UI
+
+NO HIGH GLOW AND ANIMATIVE EFFECTS
+
+Monochromatic theme: Black background with green accents.
+
+Premium feel: Small, minimal elements and text, subtle shadows, smooth hover effects.
+
+Responsive layout: Works perfectly on desktop and mobile.
+
+Code display: Scrollable, elegant code container with syntax highlighting.
+
+2. Snippet Creation & Management
+
+IDE-like editor: Users can write or paste code with syntax highlighting and line numbers.
+
+Auto-detect language: Automatically identifies the programming language of the code.
+
+Snippet sharing: Generates a unique short link for each snippet that can be shared or embedded.
+
+Optional privacy: Snippets can be password-protected.
+
+Guest usage: Snippets created without login expire after 24 hours.
+
+Logged-in users: Can save snippets indefinitely and track all their snippets in a dedicated dashboard.
+
+3. Profile Dashboard (for logged-in users)
+
+Overview: Quick access to all user snippets with status (public/private, expiration).
+
+Profile: Manage username, display name, and personal settings like dark/light mode.
+
+Security: Change password, enable two-factor authentication, and monitor login activity.
+
+Danger Zone: Permanently delete snippets or account, including bulk deletion and expired snippet cleanup.
+
+4. Additional Features
+
+Copy-to-clipboard functionality for snippets.
+
+Snippets can be embedded in other websites easily.
+
+Expiration timer for guest snippets ensures automatic cleanup.
+
+Smooth, futuristic interactions with hover effects and compact spacing.
+
+5. Snippet Storage
+
+Stored as text in the database (not as separate files).
+
+Each snippet includes:
+
+ID → Unique snippet ID
+
+Name → Snippet title
+
+Code → Code content as text
+
+Language → Detected or user-selected language
+
+Password → Optional for private snippets
+
+Created At → Timestamp
+
+Expire At → Optional expiration for guest snippets
+
+Using Turso database ensures:
+
+Fast snippet retrieval and search
+
+Cloud replication and storage
+
+Lightweight, edge-friendly performance
+
+Summary
+
+This platform is like a mini GitHub Gist with a premium IDE feel. It’s fast, elegant, and user-friendly, providing both guests and registered users with a seamless code-sharing experience.
+
+Guests: Quick sharing with 24-hour expiration.
+
+Logged-in users: Full snippet tracking, dashboard, and security features.
+
+Premium, black-and-green design for a futuristic, professional look.
