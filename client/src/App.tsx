@@ -9,12 +9,15 @@ import Dashboard from "@/pages/dashboard";
 import SnippetView from "@/pages/snippet-view";
 import Profile from "@/pages/profile";
 
+import ProjectView from "@/pages/project-view";
+
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/dashboard" component={Dashboard} />
       <Route path="/snippet/:id" component={SnippetView} />
+      <Route path="/project/:id" component={ProjectView} />
       <Route path="/profile" component={Profile} />
       <Route component={NotFound} />
     </Switch>
