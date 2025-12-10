@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
-  --font-sans: 'Space Grotesk', 'Inter', sans-serif;
+  --font-sans: 'Inter', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
   --color-background: hsl(var(--background));
@@ -41,26 +41,26 @@
 }
 
 :root {
-  /* Dark mode by default as per requirements (Monochromatic theme: Black background) */
-  --background: 0 0% 0%; /* Black */
-  --foreground: 0 0% 95%; /* Almost White */
+  /* Ultra dark, high contrast, utility focused */
+  --background: 0 0% 0%; 
+  --foreground: 0 0% 90%; 
 
-  --card: 0 0% 5%; /* Very dark grey */
+  --card: 0 0% 8%; 
   --card-foreground: 0 0% 95%;
 
-  --popover: 0 0% 5%;
+  --popover: 0 0% 8%;
   --popover-foreground: 0 0% 95%;
 
-  --primary: 142 70% 50%; /* Vibrant Green */
+  --primary: 142 70% 45%; /* Slightly darker green for less eye strain */
   --primary-foreground: 0 0% 0%;
 
-  --secondary: 0 0% 10%;
+  --secondary: 0 0% 12%;
   --secondary-foreground: 0 0% 98%;
 
-  --muted: 0 0% 10%;
-  --muted-foreground: 0 0% 60%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 50%;
 
-  --accent: 142 70% 50%; /* Same as primary for highlights */
+  --accent: 142 70% 45%; 
   --accent-foreground: 0 0% 0%;
 
   --destructive: 0 62% 30%;
@@ -68,22 +68,22 @@
 
   --border: 0 0% 15%;
   --input: 0 0% 15%;
-  --ring: 142 70% 50%;
+  --ring: 142 70% 45%;
 
-  --radius: 0.25rem;
+  --radius: 0.125rem; /* Very sharp corners */
 }
 
-/* Force dark mode styles everywhere since the theme is monochromatic black */
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: var(--font-sans);
+  font-size: 13px; /* Smaller base font size */
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Slimmer */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
@@ -92,22 +92,16 @@ body {
 
 ::-webkit-scrollbar-thumb {
   background: hsl(var(--border));
-  border-radius: 4px;
+  border-radius: 0px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: hsl(var(--primary));
 }
 
-/* Utilities for futuristic feel */
-.glass-panel {
-  background: rgba(10, 10, 10, 0.7);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.neon-border {
-  box-shadow: 0 0 10px -5px hsl(var(--primary) / 0.5);
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
 }
 
 .code-font {

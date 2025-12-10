@@ -3,17 +3,12 @@ import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { createSnippet } from "@/lib/mock-data";
 import { useLocation } from "wouter";
-import { Lock, Unlock, Zap, ChevronDown, Clock } from "lucide-react";
+import { Lock, Unlock, Zap, ChevronDown, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
-  const [code, setCode] = useState(`// Welcome to SnippetShare
-// Start typing your code here...
-
-function helloWorld() {
-  console.log("Hello, World!");
-}`);
+  const [code, setCode] = useState(`// Start typing...`);
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [isPrivate, setIsPrivate] = useState(false);
@@ -27,7 +22,7 @@ function helloWorld() {
     } else if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
       setLanguage("json");
     } else if (code.includes("import React") || code.includes("export default")) {
-      setLanguage("javascript"); // or typescript
+      setLanguage("javascript");
     } else if (code.includes("def ") && code.includes(":")) {
       setLanguage("python");
     } else if (code.includes("fn ") && code.includes("{")) {
@@ -40,114 +35,91 @@ function helloWorld() {
   }, [code]);
 
   const handleCreate = () => {
-    if (!code.trim()) {
-      toast.error("Please enter some code first");
+    if (!code.trim() || code === "// Start typing...") {
+      toast.error("Enter some code first");
       return;
     }
     
     const snippet = createSnippet({
-      title: title || "Untitled Snippet",
+      title: title || "Untitled",
       code,
       language,
       isPrivate,
       expiresAt: isGuest ? new Date(Date.now() + 86400000).toISOString() : undefined 
     });
 
-    toast.success("Snippet created successfully!");
+    toast.success("Saved");
     setLocation(`/snippet/${snippet.id}`);
   };
 
   return (
     <Layout>
-      <div className="max-w-5xl mx-auto space-y-8">
-        
-        {/* Header Section - Minimalist */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 border-b border-white/5 pb-8">
-          <div className="space-y-2">
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-white">
-              Share Code. <span className="text-primary">Instantly.</span>
-            </h1>
-            <p className="text-muted-foreground text-lg max-w-lg">
-              A premium, secure platform for developers to share code snippets with expiration and privacy controls.
-            </p>
-          </div>
-          
-          <button 
-            onClick={handleCreate}
-            className="px-8 py-3 bg-primary text-black font-bold text-lg rounded hover:bg-primary/90 transition-all active:scale-95 flex items-center gap-2"
-          >
-            <Zap className="w-5 h-5" />
-            Create Snippet
-          </button>
-        </div>
-
-        {/* Controls */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
-          <div className="md:col-span-8">
+      <div className="h-[calc(100vh-6rem)] flex flex-col gap-2">
+        {/* Compact Toolbar */}
+        <div className="flex items-center gap-2 p-1">
+          <div className="flex-1">
             <input 
               type="text" 
-              placeholder="Snippet Title (optional)" 
+              placeholder="Snippet Title..." 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-card border border-border rounded px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary/50 transition-colors"
+              className="w-full bg-transparent border-b border-border/50 px-2 py-1 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 transition-colors font-medium h-8"
             />
           </div>
           
-          <div className="md:col-span-2">
-             <div className="relative group">
-                <select 
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value)}
-                  className="w-full appearance-none bg-card border border-border rounded px-4 py-3 text-foreground focus:outline-none focus:border-primary/50 cursor-pointer transition-colors"
-                >
-                  <option value="javascript">JavaScript</option>
-                  <option value="typescript">TypeScript</option>
-                  <option value="python">Python</option>
-                  <option value="html">HTML</option>
-                  <option value="css">CSS</option>
-                  <option value="json">JSON</option>
-                  <option value="rust">Rust</option>
-                  <option value="go">Go</option>
-                  <option value="cpp">C++</option>
-                  <option value="java">Java</option>
-                  <option value="sql">SQL</option>
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none group-hover:text-primary transition-colors" />
-             </div>
+          <div className="w-32 relative group">
+             <select 
+               value={language}
+               onChange={(e) => setLanguage(e.target.value)}
+               className="w-full appearance-none bg-card border border-border rounded-sm px-2 py-1 text-xs text-foreground focus:outline-none focus:border-primary/50 cursor-pointer transition-colors h-7 pl-2 pr-6"
+             >
+               <option value="javascript">JavaScript</option>
+               <option value="typescript">TypeScript</option>
+               <option value="python">Python</option>
+               <option value="html">HTML</option>
+               <option value="css">CSS</option>
+               <option value="json">JSON</option>
+               <option value="rust">Rust</option>
+               <option value="go">Go</option>
+               <option value="cpp">C++</option>
+               <option value="java">Java</option>
+               <option value="sql">SQL</option>
+             </select>
+             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
           </div>
 
-          <div className="md:col-span-2">
-            <button 
-              onClick={() => setIsPrivate(!isPrivate)}
-              className={`w-full h-full border rounded flex items-center justify-center gap-2 transition-all duration-300 ${
-                isPrivate 
-                  ? 'border-primary/50 bg-primary/10 text-primary' 
-                  : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-border/80'
-              }`}
-            >
-              {isPrivate ? <Lock className="w-4 h-4" /> : <Unlock className="w-4 h-4" />}
-              <span>{isPrivate ? "Private" : "Public"}</span>
-            </button>
-          </div>
+          <button 
+            onClick={() => setIsPrivate(!isPrivate)}
+            className={`h-7 px-3 border rounded-sm flex items-center gap-1.5 text-xs transition-all ${
+              isPrivate 
+                ? 'border-primary/30 bg-primary/10 text-primary' 
+                : 'border-border bg-card text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+            <span>{isPrivate ? "Private" : "Public"}</span>
+          </button>
+
+          <button 
+            onClick={handleCreate}
+            className="h-7 px-4 bg-primary text-black text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1.5"
+          >
+            <Plus className="w-3 h-3" />
+            Save
+          </button>
         </div>
 
-        {/* Editor */}
-        <CodeEditor 
-          initialCode={code} 
-          language={language} 
-          onChange={setCode}
-          title={title || "untitled"}
-        />
-
-        {/* Info */}
-        <div className="flex items-center gap-4 text-sm text-muted-foreground bg-card/50 p-4 rounded border border-white/5">
-          <Clock className="w-4 h-4 text-primary" />
-          <p>
-            Guest snippets automatically expire in <span className="text-foreground font-medium">24 hours</span>. 
-            <span className="text-primary cursor-pointer hover:underline ml-1">Log in</span> to save permanently.
-          </p>
+        {/* Full Height Editor */}
+        <div className="flex-1 min-h-0 border border-border rounded-sm overflow-hidden bg-[#0d0d0d]">
+          <CodeEditor 
+            initialCode={code} 
+            language={language} 
+            onChange={setCode}
+            title={title || "untitled"}
+            className="h-full border-none rounded-none"
+            compact={true}
+          />
         </div>
-
       </div>
     </Layout>
   );
