@@ -1,3 +1,32 @@
+export interface FileNode {
+  id: string;
+  name: string;
+  type: "file" | "folder";
+  language?: string;
+  content?: string;
+  isOpen?: boolean;
+  children?: FileNode[];
+}
+
+export interface Snippet {
+  id: string;
+  title: string;
+  code: string;
+  language: string;
+  isPrivate: boolean;
+  createdAt: string;
+  views: number;
+}
+
+export interface Project {
+  id: string;
+  title: string;
+  files: FileNode[];
+  isPrivate: boolean;
+  createdAt: string;
+  views: number;
+}
+
 // Mock Data Stores
 let snippetsStore: Snippet[] = [];
 let projectsStore: Project[] = [
