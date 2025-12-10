@@ -1,5 +1,28 @@
 import { Link, useLocation } from "wouter";
-import { Terminal, User, Plus, LayoutDashboard } from "lucide-react";
+import { Terminal, User, Plus, LayoutDashboard, AlertTriangle, X } from "lucide-react";
+import { useState } from "react";
+
+export function GuestWarningBanner() {
+  const [dismissed, setDismissed] = useState(false);
+  
+  if (dismissed) return null;
+  
+  return (
+    <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-3" data-testid="guest-warning-banner">
+      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+      <p className="text-sm text-amber-500/90 font-medium">
+        Your snippets may be lost without an account. <Link href="/profile" className="underline hover:text-amber-400" data-testid="link-sign-in">Sign in</Link> to save your work permanently.
+      </p>
+      <button 
+        onClick={() => setDismissed(true)}
+        className="p-1 rounded hover:bg-amber-500/20 transition-colors ml-2"
+        data-testid="button-dismiss-warning"
+      >
+        <X className="w-3 h-3 text-amber-500/70" />
+      </button>
+    </div>
+  );
+}
 
 export function Navbar() {
   const [location] = useLocation();
@@ -40,6 +63,7 @@ export function Navbar() {
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <div className="h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
+      <GuestWarningBanner />
       <Navbar />
       <main className="flex-1 flex flex-col min-h-0 bg-workspace-bg">
         {children}
