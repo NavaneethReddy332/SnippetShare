@@ -56,7 +56,7 @@ export function FileTree({
             </div>
           </ContextMenu.Trigger>
           
-          <ContextMenu.Content className="min-w-[160px] bg-[#1a1a1a] border border-border rounded shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
+          <ContextMenu.Content className="min-w-[160px] bg-popover border border-border rounded shadow-xl p-1 z-50 animate-in fade-in zoom-in-95 duration-100">
             {isFolder && (
               <>
                 <ContextMenu.Item 
@@ -93,8 +93,8 @@ export function FileTree({
   };
 
   return (
-    <div className="w-60 bg-[#111] border-r border-border flex flex-col h-full flex-shrink-0">
-      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-[#1a1a1a]">
+    <div className="w-60 bg-sidebar-bg border-r border-border flex flex-col h-full flex-shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-panel-header-bg">
         <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground truncate pr-2" title={projectName}>{projectName}</span>
         <div className="flex items-center gap-1 flex-shrink-0">
           <button 

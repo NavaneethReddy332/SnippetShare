@@ -38,6 +38,14 @@
   --radius-sm: 0.125rem;
   --radius-md: 0.25rem;
   --radius-lg: 0.5rem;
+  
+  /* Semantic Workspace Colors */
+  --color-workspace-bg: hsl(var(--workspace-bg));
+  --color-sidebar-bg: hsl(var(--sidebar-bg));
+  --color-activity-bar-bg: hsl(var(--activity-bar-bg));
+  --color-editor-bg: hsl(var(--editor-bg));
+  --color-editor-gutter-bg: hsl(var(--editor-gutter-bg));
+  --color-panel-header-bg: hsl(var(--panel-header-bg));
 }
 
 :root {
@@ -45,13 +53,21 @@
   --background: 0 0% 0%; 
   --foreground: 0 0% 90%; 
 
+  /* Semantic Workspace Definitions */
+  --workspace-bg: 0 0% 0%;         /* Main background */
+  --sidebar-bg: 0 0% 7%;           /* Explorer sidebar */
+  --activity-bar-bg: 0 0% 5%;      /* Left/Top Icon bar */
+  --editor-bg: 0 0% 3%;            /* Code Editor background */
+  --editor-gutter-bg: 0 0% 4%;     /* Line numbers */
+  --panel-header-bg: 0 0% 10%;     /* Section headers */
+
   --card: 0 0% 8%; 
   --card-foreground: 0 0% 95%;
 
   --popover: 0 0% 8%;
   --popover-foreground: 0 0% 95%;
 
-  --primary: 142 70% 45%; /* Slightly darker green for less eye strain */
+  --primary: 142 70% 45%; 
   --primary-foreground: 0 0% 0%;
 
   --secondary: 0 0% 12%;
@@ -87,7 +103,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {

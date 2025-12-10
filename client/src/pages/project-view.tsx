@@ -110,7 +110,7 @@ export default function ProjectView() {
         </div>
 
         {/* Project Explorer & Viewer */}
-        <div className="flex-1 min-h-0 flex border border-border rounded-sm overflow-hidden bg-[#0d0d0d]">
+        <div className="flex-1 min-h-0 flex border border-border rounded-sm overflow-hidden bg-workspace-bg">
            <FileTree 
               files={files} 
               activeFileId={activeFileId} 

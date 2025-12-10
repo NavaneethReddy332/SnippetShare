@@ -51,8 +51,7 @@ export function CodeEditor({
   const lineNumbers = code.split('\n').map((_, i) => i + 1);
 
   return (
-    <div className={`flex flex-col bg-[#0d0d0d] ${isFullscreen ? 'fixed inset-0 z-50' : 'relative'} ${className}`}>
-      {/* Footer info - Moved to top in compact mode or keep at bottom? Let's keep a very thin status bar at bottom */}
+    <div className={`flex flex-col bg-editor-bg ${isFullscreen ? 'fixed inset-0 z-50' : 'relative'} ${className}`}>
       
       {/* Editor/Viewer Area */}
       <div className="flex-1 relative overflow-auto custom-scrollbar">
@@ -66,7 +65,7 @@ export function CodeEditor({
              <pre className={`${className} p-2 float-left min-w-full text-xs font-mono`} style={{...style, backgroundColor: 'transparent', margin: 0}}>
                {tokens.map((line, i) => (
                  <div key={i} {...getLineProps({ line })} className="table-row">
-                   <span className="table-cell text-right pr-3 select-none text-muted-foreground/30 w-10 border-r border-white/5 mr-3 bg-[#111]">
+                   <span className="table-cell text-right pr-3 select-none text-muted-foreground/30 w-10 border-r border-white/5 mr-3 bg-editor-gutter-bg">
                      {i + 1}
                    </span>
                    <span className="table-cell pl-3">
@@ -82,7 +81,7 @@ export function CodeEditor({
         ) : (
           <div className="relative flex min-h-full">
             {/* Line Numbers */}
-            <div className="flex-none w-10 py-2 text-right pr-2 text-xs text-muted-foreground/30 select-none border-r border-white/5 bg-[#111] font-mono">
+            <div className="flex-none w-10 py-2 text-right pr-2 text-xs text-muted-foreground/30 select-none border-r border-white/5 bg-editor-gutter-bg font-mono">
               {lineNumbers.map((num) => (
                 <div key={num} className="h-5 leading-5">{num}</div>
               ))}
@@ -102,7 +101,7 @@ export function CodeEditor({
       </div>
       
       {/* Status Bar */}
-      <div className="flex-none bg-[#111] border-t border-white/5 px-2 py-1 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+      <div className="flex-none bg-panel-header-bg border-t border-white/5 px-2 py-1 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
         <div className="flex gap-3">
           <span className="text-primary">{language}</span>
           <span>{code.length} chars</span>

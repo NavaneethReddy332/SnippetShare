@@ -183,7 +183,7 @@ export default function Home() {
         
         {/* Compact Toolbar - Only Visible in Snippet Mode */}
         {mode === "snippet" && (
-          <div className="flex items-center gap-2 p-1 border-b border-border/50 bg-[#0d0d0d] z-10">
+          <div className="flex items-center gap-2 p-1 border-b border-border/50 bg-editor-bg z-10">
             
             {/* Mode Switcher */}
             <div className="flex bg-card border border-border rounded-sm p-0.5">
@@ -250,7 +250,7 @@ export default function Home() {
         )}
 
         {/* Editor Area */}
-        <div className={`flex-1 min-h-0 flex bg-[#0d0d0d] relative ${mode === 'project' ? '' : 'border-t border-border/50'}`}>
+        <div className={`flex-1 min-h-0 flex bg-editor-bg relative ${mode === 'project' ? '' : 'border-t border-border/50'}`}>
           {mode === "project" && (
             <FileTree 
               files={files} 
@@ -267,7 +267,7 @@ export default function Home() {
           <div className="flex-1 flex flex-col min-w-0">
              {/* Tab Bar (only for project mode to show active file name) */}
              {mode === "project" && activeFileId && (
-               <div className="flex-none h-8 bg-[#111] border-b border-border flex items-center px-4">
+               <div className="flex-none h-8 bg-panel-header-bg border-b border-border flex items-center px-4">
                  <span className="text-xs text-muted-foreground font-mono">
                     {findFileContent(files, activeFileId) ? "editing..." : "select a file"}
                  </span>
@@ -293,7 +293,7 @@ export default function Home() {
              <div className="w-[10px] h-full bg-transparent hover:bg-primary/20 transition-colors cursor-pointer group-hover:bg-primary/20"></div>
              
              {/* Sidebar Content */}
-             <div className="flex-1 bg-[#1a1a1a] border-l border-border shadow-2xl p-4 flex flex-col gap-4">
+             <div className="flex-1 bg-sidebar-bg border-l border-border shadow-2xl p-4 flex flex-col gap-4">
                 <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">Project Controls</h3>
                 
                 {/* Project Name Input */}
@@ -360,7 +360,7 @@ export default function Home() {
       <Dialog.Root open={showProjectModal} onOpenChange={setShowProjectModal}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
-          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#1a1a1a] border border-border p-6 rounded-lg shadow-2xl z-50 w-[400px] animate-in zoom-in-95 duration-200">
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-card border border-border p-6 rounded-lg shadow-2xl z-50 w-[400px] animate-in zoom-in-95 duration-200">
              <Dialog.Title className="text-xl font-bold mb-2">Create Project</Dialog.Title>
              <Dialog.Description className="text-muted-foreground text-sm mb-6">
                Start a new project from scratch or import existing files.
