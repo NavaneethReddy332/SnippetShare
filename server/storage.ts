@@ -5,9 +5,15 @@ import {
   type InsertSnippet,
   type Project,
   type InsertProject,
-  type FileNode
+  type FileNode,
+  users,
+  snippets,
+  projects
 } from "@shared/schema";
 import { nanoid } from "nanoid";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { eq, sql } from "drizzle-orm";
+import pg from "pg";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -218,4 +224,88 @@ export default function App() {
   }
 }
 
-export const storage = new MemStorage();
+export class DbStorage implements IStorage {
+  private db;
+
+  constructor() {
+    if (!process.env.DATABASE_URL) {
+      throw new Error("DATABASE_URL is not set");
+    }
+    const pool = new pg.Pool({
+      connectionString: process.env.DATABASE_URL,
+    });
+    this.db = drizzle(pool);
+  }
+
+  async getUser(id: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.id, id));
+    return result[0];
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.username, username));
+    return result[0];
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const result = await this.db.insert(users).values(insertUser).returning();
+    return result[0];
+  }
+
+  async getSnippets(): Promise<Snippet[]> {
+    return await this.db.select().from(snippets);
+  }
+
+  async getSnippet(id: string): Promise<Snippet | undefined> {
+    const result = await this.db.select().from(snippets).where(eq(snippets.id, id));
+    return result[0];
+  }
+
+  async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
+    const id = nanoid();
+    const result = await this.db.insert(snippets).values({ ...insertSnippet, id }).returning();
+    return result[0];
+  }
+
+  async updateSnippetTitle(id: string, title: string): Promise<Snippet | undefined> {
+    const result = await this.db.update(snippets).set({ title }).where(eq(snippets.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteSnippet(id: string): Promise<void> {
+    await this.db.delete(snippets).where(eq(snippets.id, id));
+  }
+
+  async incrementSnippetViews(id: string): Promise<void> {
+    await this.db.update(snippets).set({ 
+      views: sql`(${snippets.views}::int + 1)::text`
+    }).where(eq(snippets.id, id));
+  }
+
+  async getProjects(): Promise<Project[]> {
+    return await this.db.select().from(projects);
+  }
+
+  async getProject(id: string): Promise<Project | undefined> {
+    const result = await this.db.select().from(projects).where(eq(projects.id, id));
+    return result[0];
+  }
+
+  async createProject(insertProject: InsertProject): Promise<Project> {
+    const id = nanoid();
+    const result = await this.db.insert(projects).values({ ...insertProject, id }).returning();
+    return result[0];
+  }
+
+  async deleteProject(id: string): Promise<void> {
+    await this.db.delete(projects).where(eq(projects.id, id));
+  }
+
+  async incrementProjectViews(id: string): Promise<void> {
+    await this.db.update(projects).set({ 
+      views: sql`(${projects.views}::int + 1)::text`
+    }).where(eq(projects.id, id));
+  }
+}
+
+export const storage = process.env.DATABASE_URL ? new DbStorage() : new MemStorage();
