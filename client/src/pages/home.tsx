@@ -2,7 +2,8 @@ import { useState } from "react";
 import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { FileTree } from "@/components/file-tree";
-import { createSnippet, createProject, FileNode } from "@/lib/mock-data";
+import { FileNode } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { useLocation } from "wouter";
 import { Lock, Unlock, Zap, ChevronDown, Plus, FileCode, FolderKanban, Menu, FolderUp, FilePlus } from "lucide-react";
 import { toast } from "sonner";
@@ -127,20 +128,39 @@ export default function Home() {
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (mode === "snippet") {
       if (!code.trim() || code === "// Start typing...") {
         toast.error("Enter some code first");
         return;
       }
-      const snippet = createSnippet({ title: title || "Untitled", code, language, isPrivate });
-      toast.success("Snippet Saved");
-      setLocation(`/snippet/${snippet.id}`);
+      
+      try {
+        const snippet = await api.snippets.create({ 
+          title: title || "Untitled", 
+          code, 
+          language, 
+          isPrivate,
+          views: "0"
+        });
+        toast.success("Snippet Saved");
+        setLocation(`/snippet/${snippet.id}`);
+      } catch (error) {
+        toast.error("Failed to save snippet");
+      }
     } else {
-      // Save Project logic
-      const project = createProject({ title: title || "Untitled Project", files, isPrivate });
-      toast.success("Project Saved");
-      setLocation(`/project/${project.id}`); // We'll need a project view page
+      try {
+        const project = await api.projects.create({ 
+          title: title || "Untitled Project", 
+          files, 
+          isPrivate,
+          views: "0"
+        });
+        toast.success("Project Saved");
+        setLocation(`/project/${project.id}`);
+      } catch (error) {
+        toast.error("Failed to save project");
+      }
     }
   };
 

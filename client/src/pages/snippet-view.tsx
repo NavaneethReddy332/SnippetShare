@@ -1,21 +1,31 @@
 import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
-import { getSnippet } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { useRoute } from "wouter";
 import { Calendar, Eye, Share2, Shield, AlertTriangle, Link as LinkIcon, Check } from "lucide-react";
 import { format } from "date-fns";
 import NotFound from "./not-found";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { Snippet } from "@shared/schema";
 
 export default function SnippetView() {
   const [match, params] = useRoute("/snippet/:id");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [snippet, setSnippet] = useState<Snippet | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    if (match && params.id) {
+      api.snippets.getById(params.id)
+        .then(setSnippet)
+        .catch(() => setSnippet(null))
+        .finally(() => setLoading(false));
+    }
+  }, [match, params.id]);
   
   if (!match) return <NotFound />;
-  
-  const snippet = getSnippet(params.id);
-
+  if (loading) return <Layout><div className="text-center py-20">Loading...</div></Layout>;
   if (!snippet) return <NotFound />;
 
   const handleShare = () => {

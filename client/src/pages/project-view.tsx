@@ -1,22 +1,33 @@
 import { Layout } from "@/components/layout";
 import { FileTree } from "@/components/file-tree";
 import { CodeEditor } from "@/components/code-editor";
-import { getProject, FileNode } from "@/lib/mock-data";
+import { FileNode } from "@/lib/mock-data";
+import { api } from "@/lib/api";
 import { useRoute } from "wouter";
 import { Calendar, Eye, Share2, Shield, FolderGit2, Check } from "lucide-react";
 import { format } from "date-fns";
 import NotFound from "./not-found";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import type { Project } from "@shared/schema";
 
 export default function ProjectView() {
   const [match, params] = useRoute("/project/:id");
   const [copiedLink, setCopiedLink] = useState(false);
+  const [project, setProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    if (match && params.id) {
+      api.projects.getById(params.id)
+        .then(setProject)
+        .catch(() => setProject(null))
+        .finally(() => setLoading(false));
+    }
+  }, [match, params.id]);
   
   if (!match) return <NotFound />;
-  
-  const project = getProject(params.id);
-
+  if (loading) return <Layout><div className="text-center py-20">Loading...</div></Layout>;
   if (!project) return <NotFound />;
 
   // Local state for view interaction (expanding folders, selecting files)

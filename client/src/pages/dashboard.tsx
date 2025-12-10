@@ -1,19 +1,34 @@
 import { Layout } from "@/components/layout";
-import { getSnippets, deleteSnippet, Snippet } from "@/lib/mock-data";
-import { useState } from "react";
+import { api } from "@/lib/api";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Trash2, Eye, Lock, Globe, Clock, Calendar } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
+import { toast } from "sonner";
+import type { Snippet } from "@shared/schema";
 
 export default function Dashboard() {
-  const [snippets, setSnippets] = useState<Snippet[]>(getSnippets());
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const handleDelete = (e: React.MouseEvent, id: string) => {
+  useEffect(() => {
+    api.snippets.getAll()
+      .then(setSnippets)
+      .catch(() => toast.error("Failed to load snippets"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
     e.stopPropagation();
     if (confirm("Are you sure you want to delete this snippet?")) {
-      deleteSnippet(id);
-      setSnippets(getSnippets()); // Refresh
+      try {
+        await api.snippets.delete(id);
+        setSnippets(prev => prev.filter(s => s.id !== id));
+        toast.success("Snippet deleted");
+      } catch (error) {
+        toast.error("Failed to delete snippet");
+      }
     }
   };
 
@@ -32,14 +47,18 @@ export default function Dashboard() {
              </div>
              <div className="w-px bg-border h-12"></div>
              <div className="text-right">
-                <div className="text-2xl font-mono font-bold text-foreground">{snippets.reduce((acc, s) => acc + s.views, 0)}</div>
+                <div className="text-2xl font-mono font-bold text-foreground">{snippets.reduce((acc, s) => acc + parseInt(s.views || "0"), 0)}</div>
                 <div className="text-xs text-muted-foreground uppercase tracking-wider">Total Views</div>
              </div>
           </div>
         </div>
 
         <div className="grid gap-4">
-          {snippets.length === 0 ? (
+          {loading ? (
+            <div className="text-center py-20">
+              <p className="text-muted-foreground">Loading snippets...</p>
+            </div>
+          ) : snippets.length === 0 ? (
             <div className="text-center py-20 border border-dashed border-border rounded-lg bg-card/30">
               <p className="text-muted-foreground mb-4">You haven't created any snippets yet.</p>
               <Link href="/">
