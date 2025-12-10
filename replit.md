@@ -35,10 +35,10 @@ Preferred communication style: Simple, everyday language.
 - **Production**: Static file serving from built assets
 
 ### Data Storage
-- **ORM**: Drizzle ORM with PostgreSQL dialect
+- **Database**: Turso (libSQL/SQLite-compatible edge database)
+- **ORM**: Drizzle ORM with SQLite dialect
 - **Schema Location**: `shared/schema.ts` - shared between client and server
-- **Current Storage**: In-memory storage (`MemStorage` class) as default implementation
-- **Database Ready**: Schema defined for PostgreSQL with users, snippets, and projects tables
+- **Environment Variables**: `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` required
 - **Validation**: Zod schemas generated from Drizzle schemas via drizzle-zod
 
 ### Key Design Patterns
@@ -55,7 +55,8 @@ Preferred communication style: Simple, everyday language.
 ## External Dependencies
 
 ### Database
-- **PostgreSQL**: Primary database (requires `DATABASE_URL` environment variable)
+- **Turso**: Edge SQLite database (requires `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` environment variables)
+- **@libsql/client**: Turso database client
 - **Drizzle Kit**: Database migration and schema push tooling
 
 ### UI Libraries
