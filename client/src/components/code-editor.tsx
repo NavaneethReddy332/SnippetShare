@@ -43,6 +43,21 @@ export function CodeEditor({
     if (onChange) onChange(newCode);
   };
 
+  const handlePaste = (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const textarea = e.currentTarget;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newCode = code.substring(0, start) + pastedText + code.substring(end);
+    setCode(newCode);
+    if (onChange) onChange(newCode);
+    
+    setTimeout(() => {
+      textarea.selectionStart = textarea.selectionEnd = start + pastedText.length;
+    }, 0);
+  };
+
   const toggleFullscreen = () => {
     setIsFullscreen(!isFullscreen);
   };
@@ -91,6 +106,7 @@ export function CodeEditor({
             <textarea
               value={code}
               onChange={handleChange}
+              onPaste={handlePaste}
               spellCheck={false}
               className="flex-1 p-2 bg-transparent text-[#e0e0e0] outline-none resize-none h-full font-mono text-xs leading-5 tab-4 caret-primary selection:bg-primary/20"
               style={{ tabSize: 2 }}
