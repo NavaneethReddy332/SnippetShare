@@ -1,10 +1,10 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
+import { sqliteTable, text, integer } from "drizzle-orm/sqlite-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export const users = pgTable("users", {
-  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+export const users = sqliteTable("users", {
+  id: text("id").primaryKey().$defaultFn(() => crypto.randomUUID()),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
 });
@@ -27,13 +27,13 @@ export interface FileNode {
   children?: FileNode[];
 }
 
-export const snippets = pgTable("snippets", {
-  id: varchar("id").primaryKey(),
+export const snippets = sqliteTable("snippets", {
+  id: text("id").primaryKey(),
   title: text("title").notNull(),
   code: text("code").notNull(),
   language: text("language").notNull(),
-  isPrivate: boolean("is_private").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   views: text("views").notNull().default("0"),
 });
 
@@ -46,19 +46,29 @@ export const insertSnippetSchema = createInsertSchema(snippets).omit({
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
 export type Snippet = typeof snippets.$inferSelect;
 
-export const projects = pgTable("projects", {
-  id: varchar("id").primaryKey(),
+export const projects = sqliteTable("projects", {
+  id: text("id").primaryKey(),
   title: text("title").notNull(),
-  files: jsonb("files").notNull().$type<FileNode[]>(),
-  isPrivate: boolean("is_private").notNull().default(false),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
+  files: text("files", { mode: "json" }).notNull().$type<FileNode[]>(),
+  isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   views: text("views").notNull().default("0"),
 });
 
-export const insertProjectSchema = createInsertSchema(projects).omit({
-  id: true,
-  createdAt: true,
-  views: true,
+const fileNodeSchema: z.ZodType<FileNode> = z.lazy(() => z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(["file", "folder"]),
+  language: z.string().optional(),
+  content: z.string().optional(),
+  isOpen: z.boolean().optional(),
+  children: z.array(fileNodeSchema).optional(),
+}));
+
+export const insertProjectSchema = z.object({
+  title: z.string(),
+  files: z.array(fileNodeSchema),
+  isPrivate: z.boolean().optional(),
 });
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;

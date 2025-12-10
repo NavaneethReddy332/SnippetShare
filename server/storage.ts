@@ -11,16 +11,15 @@ import {
   projects
 } from "@shared/schema";
 import { nanoid } from "nanoid";
-import { drizzle } from "drizzle-orm/node-postgres";
+import { drizzle } from "drizzle-orm/libsql";
+import { createClient } from "@libsql/client";
 import { eq, sql } from "drizzle-orm";
-import pg from "pg";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  // Snippet operations
   getSnippets(): Promise<Snippet[]>;
   getSnippet(id: string): Promise<Snippet | undefined>;
   createSnippet(snippet: InsertSnippet): Promise<Snippet>;
@@ -28,7 +27,6 @@ export interface IStorage {
   deleteSnippet(id: string): Promise<void>;
   incrementSnippetViews(id: string): Promise<void>;
   
-  // Project operations
   getProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
   createProject(project: InsertProject): Promise<Project>;
@@ -46,7 +44,6 @@ export class MemStorage implements IStorage {
     this.snippets = new Map();
     this.projects = new Map();
     
-    // Add demo project
     const demoProject: Project = {
       id: "demo-project",
       title: "React Todo App",
@@ -228,13 +225,14 @@ export class DbStorage implements IStorage {
   private db;
 
   constructor() {
-    if (!process.env.DATABASE_URL) {
-      throw new Error("DATABASE_URL is not set");
+    if (!process.env.TURSO_DATABASE_URL || !process.env.TURSO_AUTH_TOKEN) {
+      throw new Error("TURSO_DATABASE_URL and TURSO_AUTH_TOKEN must be set");
     }
-    const pool = new pg.Pool({
-      connectionString: process.env.DATABASE_URL,
+    const client = createClient({
+      url: process.env.TURSO_DATABASE_URL,
+      authToken: process.env.TURSO_AUTH_TOKEN,
     });
-    this.db = drizzle(pool);
+    this.db = drizzle(client);
   }
 
   async getUser(id: string): Promise<User | undefined> {
@@ -248,7 +246,8 @@ export class DbStorage implements IStorage {
   }
 
   async createUser(insertUser: InsertUser): Promise<User> {
-    const result = await this.db.insert(users).values(insertUser).returning();
+    const id = nanoid();
+    const result = await this.db.insert(users).values({ ...insertUser, id }).returning();
     return result[0];
   }
 
@@ -278,7 +277,7 @@ export class DbStorage implements IStorage {
 
   async incrementSnippetViews(id: string): Promise<void> {
     await this.db.update(snippets).set({ 
-      views: sql`(${snippets.views}::int + 1)::text`
+      views: sql`CAST((CAST(${snippets.views} AS INTEGER) + 1) AS TEXT)`
     }).where(eq(snippets.id, id));
   }
 
@@ -303,9 +302,11 @@ export class DbStorage implements IStorage {
 
   async incrementProjectViews(id: string): Promise<void> {
     await this.db.update(projects).set({ 
-      views: sql`(${projects.views}::int + 1)::text`
+      views: sql`CAST((CAST(${projects.views} AS INTEGER) + 1) AS TEXT)`
     }).where(eq(projects.id, id));
   }
 }
 
-export const storage = process.env.DATABASE_URL ? new DbStorage() : new MemStorage();
+export const storage = (process.env.TURSO_DATABASE_URL && process.env.TURSO_AUTH_TOKEN) 
+  ? new DbStorage() 
+  : new MemStorage();
