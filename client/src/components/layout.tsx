@@ -1,47 +1,55 @@
 import { Link, useLocation } from "wouter";
 import { Terminal, User, Plus, LayoutDashboard } from "lucide-react";
 
-export function Sidebar() {
+export function Navbar() {
   const [location] = useLocation();
 
   const isActive = (path: string) => location === path;
 
   return (
-    <aside className="w-12 border-r border-border bg-[#111] flex flex-col items-center py-4 gap-4 z-50">
+    <nav className="h-10 border-b border-border bg-[#111] flex items-center justify-between px-4 z-50">
       <Link href="/">
-        <a className="w-8 h-8 flex items-center justify-center rounded bg-primary/10 text-primary hover:bg-primary/20 transition-colors mb-4" title="Home">
-          <Terminal className="w-5 h-5" />
+        <a className="flex items-center gap-2 group cursor-pointer text-foreground hover:text-primary transition-colors">
+          <div className="w-6 h-6 flex items-center justify-center rounded bg-primary/10 text-primary">
+            <Terminal className="w-3.5 h-3.5" />
+          </div>
+          <span className="font-sans font-bold text-xs tracking-tight">SnippetShare</span>
         </a>
       </Link>
 
-      <div className="flex flex-col gap-3 w-full px-2">
+      <div className="flex items-center gap-1">
         <Link href="/">
-          <a className={`w-8 h-8 mx-auto flex items-center justify-center rounded transition-colors ${isActive('/') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="New Snippet">
-            <Plus className="w-5 h-5" />
+          <a className={`h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded transition-colors ${isActive('/') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="New Snippet">
+            <Plus className="w-3.5 h-3.5" />
+            <span>New</span>
           </a>
         </Link>
         
+        <div className="w-px h-3 bg-border mx-1"></div>
+
         <Link href="/dashboard">
-          <a className={`w-8 h-8 mx-auto flex items-center justify-center rounded transition-colors ${isActive('/dashboard') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="Dashboard">
-            <LayoutDashboard className="w-5 h-5" />
+          <a className={`h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded transition-colors ${isActive('/dashboard') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="Dashboard">
+            <LayoutDashboard className="w-3.5 h-3.5" />
+            <span>Dash</span>
           </a>
         </Link>
 
         <Link href="/profile">
-          <a className={`w-8 h-8 mx-auto flex items-center justify-center rounded transition-colors ${isActive('/profile') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="Profile">
-            <User className="w-5 h-5" />
+          <a className={`h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded transition-colors ${isActive('/profile') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="Profile">
+            <User className="w-3.5 h-3.5" />
+            <span>Profile</span>
           </a>
         </Link>
       </div>
-    </aside>
+    </nav>
   );
 }
 
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="h-screen bg-background text-foreground flex font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 flex flex-col min-w-0 bg-[#000]">
+    <div className="h-screen bg-background text-foreground flex flex-col font-sans selection:bg-primary/20 selection:text-primary overflow-hidden">
+      <Navbar />
+      <main className="flex-1 flex flex-col min-h-0 bg-[#000]">
         {children}
       </main>
     </div>
