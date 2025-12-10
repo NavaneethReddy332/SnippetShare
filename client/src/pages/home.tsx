@@ -4,9 +4,10 @@ import { CodeEditor } from "@/components/code-editor";
 import { FileTree } from "@/components/file-tree";
 import { createSnippet, createProject, FileNode } from "@/lib/mock-data";
 import { useLocation } from "wouter";
-import { Lock, Unlock, Zap, ChevronDown, Plus, FileCode, FolderKanban } from "lucide-react";
+import { Lock, Unlock, Zap, ChevronDown, Plus, FileCode, FolderKanban, Menu, FolderUp, FilePlus } from "lucide-react";
 import { toast } from "sonner";
 import { nanoid } from "nanoid";
+import * as Dialog from "@radix-ui/react-dialog";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
@@ -22,6 +23,7 @@ export default function Home() {
     { id: "root-1", name: "index.js", type: "file", language: "javascript", content: "// Main entry point" }
   ]);
   const [activeFileId, setActiveFileId] = useState<string | null>("root-1");
+  const [showProjectModal, setShowProjectModal] = useState(false);
 
   const [isPrivate, setIsPrivate] = useState(false);
 
@@ -142,41 +144,75 @@ export default function Home() {
     }
   };
 
+  const handleModeChange = (newMode: "snippet" | "project") => {
+    if (newMode === "project") {
+      setShowProjectModal(true);
+    } else {
+      setMode("snippet");
+    }
+  };
+
+  const initProject = (type: "new" | "import") => {
+    if (type === "new") {
+      setFiles([{ id: "root-1", name: "index.js", type: "file", language: "javascript", content: "// Main entry point" }]);
+      setTitle("");
+      setActiveFileId("root-1");
+    } else {
+      // Mock Import
+      setFiles([
+        { 
+          id: "imported-root", 
+          name: "imported-project", 
+          type: "folder", 
+          isOpen: true, 
+          children: [
+            { id: "f1", name: "README.md", type: "file", language: "markdown", content: "# Imported Project" }
+          ]
+        }
+      ]);
+      setTitle("Imported Project");
+      setActiveFileId("f1");
+    }
+    setMode("project");
+    setShowProjectModal(false);
+  };
+
   return (
     <Layout>
-      <div className="h-[calc(100vh-6rem)] flex flex-col gap-2">
-        {/* Compact Toolbar */}
-        <div className="flex items-center gap-2 p-1 border-b border-border/50 pb-2">
-          
-          {/* Mode Switcher */}
-          <div className="flex bg-card border border-border rounded-sm p-0.5">
-             <button 
-               onClick={() => setMode("snippet")}
-               className={`px-2 py-0.5 text-xs font-medium rounded-sm flex items-center gap-1.5 transition-colors ${mode === "snippet" ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-             >
-               <FileCode className="w-3 h-3" /> Snippet
-             </button>
-             <button 
-               onClick={() => setMode("project")}
-               className={`px-2 py-0.5 text-xs font-medium rounded-sm flex items-center gap-1.5 transition-colors ${mode === "project" ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
-             >
-               <FolderKanban className="w-3 h-3" /> Project
-             </button>
-          </div>
-
-          <div className="h-4 w-px bg-border/50 mx-1"></div>
-
-          <div className="flex-1">
-            <input 
-              type="text" 
-              placeholder={mode === "snippet" ? "Snippet Title..." : "Project Name..."}
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-transparent px-2 py-1 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium h-7"
-            />
-          </div>
-          
-          {mode === "snippet" && (
+      <div className="h-[calc(100vh-6rem)] relative flex flex-col gap-2 group/layout">
+        
+        {/* Compact Toolbar - Only Visible in Snippet Mode */}
+        {mode === "snippet" && (
+          <div className="flex items-center gap-2 p-1 border-b border-border/50 pb-2">
+            
+            {/* Mode Switcher */}
+            <div className="flex bg-card border border-border rounded-sm p-0.5">
+               <button 
+                 onClick={() => handleModeChange("snippet")}
+                 className={`px-2 py-0.5 text-xs font-medium rounded-sm flex items-center gap-1.5 transition-colors ${mode === "snippet" ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                 <FileCode className="w-3 h-3" /> Snippet
+               </button>
+               <button 
+                 onClick={() => handleModeChange("project")}
+                 className={`px-2 py-0.5 text-xs font-medium rounded-sm flex items-center gap-1.5 transition-colors ${mode === "project" ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+               >
+                 <FolderKanban className="w-3 h-3" /> Project
+               </button>
+            </div>
+  
+            <div className="h-4 w-px bg-border/50 mx-1"></div>
+  
+            <div className="flex-1">
+              <input 
+                type="text" 
+                placeholder="Snippet Title..." 
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full bg-transparent px-2 py-1 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium h-7"
+              />
+            </div>
+            
             <div className="w-32 relative group">
                <select 
                  value={language}
@@ -190,31 +226,31 @@ export default function Home() {
                </select>
                <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
             </div>
-          )}
-
-          <button 
-            onClick={() => setIsPrivate(!isPrivate)}
-            className={`h-7 px-3 border rounded-sm flex items-center gap-1.5 text-xs transition-all ${
-              isPrivate 
-                ? 'border-primary/30 bg-primary/10 text-primary' 
-                : 'border-border bg-card text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-            <span>{isPrivate ? "Private" : "Public"}</span>
-          </button>
-
-          <button 
-            onClick={handleSave}
-            className="h-7 px-4 bg-primary text-black text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1.5"
-          >
-            <Plus className="w-3 h-3" />
-            Save
-          </button>
-        </div>
+  
+            <button 
+              onClick={() => setIsPrivate(!isPrivate)}
+              className={`h-7 px-3 border rounded-sm flex items-center gap-1.5 text-xs transition-all ${
+                isPrivate 
+                  ? 'border-primary/30 bg-primary/10 text-primary' 
+                  : 'border-border bg-card text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+              <span>{isPrivate ? "Private" : "Public"}</span>
+            </button>
+  
+            <button 
+              onClick={handleSave}
+              className="h-7 px-4 bg-primary text-black text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1.5"
+            >
+              <Plus className="w-3 h-3" />
+              Save
+            </button>
+          </div>
+        )}
 
         {/* Editor Area */}
-        <div className="flex-1 min-h-0 flex border border-border rounded-sm overflow-hidden bg-[#0d0d0d]">
+        <div className="flex-1 min-h-0 flex border border-border rounded-sm overflow-hidden bg-[#0d0d0d] relative">
           {mode === "project" && (
             <FileTree 
               files={files} 
@@ -224,6 +260,7 @@ export default function Home() {
               onAddFile={handleAddFile}
               onAddFolder={handleAddFolder}
               onDelete={handleDelete}
+              projectName={title || "Untitled Project"}
             />
           )}
           
@@ -248,7 +285,121 @@ export default function Home() {
              />
           </div>
         </div>
+
+        {/* Hiding Right Sidebar (Project Mode Only) */}
+        {mode === "project" && (
+          <div className="absolute top-0 right-0 h-full w-64 translate-x-[calc(100%-10px)] hover:translate-x-0 transition-transform duration-300 z-50 flex">
+             {/* Trigger Area */}
+             <div className="w-[10px] h-full bg-transparent hover:bg-primary/20 transition-colors cursor-pointer group-hover:bg-primary/20"></div>
+             
+             {/* Sidebar Content */}
+             <div className="flex-1 bg-[#1a1a1a] border-l border-border shadow-2xl p-4 flex flex-col gap-4">
+                <h3 className="font-bold text-sm uppercase tracking-wider text-muted-foreground mb-2">Project Controls</h3>
+                
+                {/* Project Name Input */}
+                <div className="space-y-1">
+                   <label className="text-xs text-muted-foreground">Project Name</label>
+                   <input 
+                     type="text" 
+                     value={title}
+                     onChange={(e) => setTitle(e.target.value)}
+                     className="w-full bg-black/20 border border-border rounded px-2 py-1.5 text-xs text-foreground focus:outline-none focus:border-primary/50"
+                     placeholder="Project Name"
+                   />
+                </div>
+
+                {/* Mode Switcher */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Mode</label>
+                  <div className="flex bg-black/20 border border-border rounded-sm p-0.5">
+                     <button 
+                       onClick={() => handleModeChange("snippet")}
+                       className={`flex-1 px-2 py-1 text-xs font-medium rounded-sm flex items-center justify-center gap-1.5 transition-colors ${mode === "snippet" ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                     >
+                       <FileCode className="w-3 h-3" /> Snippet
+                     </button>
+                     <button 
+                       onClick={() => handleModeChange("project")}
+                       className={`flex-1 px-2 py-1 text-xs font-medium rounded-sm flex items-center justify-center gap-1.5 transition-colors ${mode === "project" ? 'bg-primary/20 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+                     >
+                       <FolderKanban className="w-3 h-3" /> Project
+                     </button>
+                  </div>
+                </div>
+
+                {/* Privacy Toggle */}
+                <button 
+                  onClick={() => setIsPrivate(!isPrivate)}
+                  className={`w-full py-1.5 border rounded-sm flex items-center justify-center gap-1.5 text-xs transition-all ${
+                    isPrivate 
+                      ? 'border-primary/30 bg-primary/10 text-primary' 
+                      : 'border-border bg-black/20 text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+                  <span>{isPrivate ? "Private Project" : "Public Project"}</span>
+                </button>
+
+                <div className="flex-1"></div>
+
+                {/* Save Button */}
+                <button 
+                  onClick={handleSave}
+                  className="w-full py-2 bg-primary text-black text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Plus className="w-3 h-3" />
+                  Save Project
+                </button>
+             </div>
+          </div>
+        )}
+
       </div>
+
+      {/* Project Creation Modal */}
+      <Dialog.Root open={showProjectModal} onOpenChange={setShowProjectModal}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 animate-in fade-in duration-200" />
+          <Dialog.Content className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-[#1a1a1a] border border-border p-6 rounded-lg shadow-2xl z-50 w-[400px] animate-in zoom-in-95 duration-200">
+             <Dialog.Title className="text-xl font-bold mb-2">Create Project</Dialog.Title>
+             <Dialog.Description className="text-muted-foreground text-sm mb-6">
+               Start a new project from scratch or import existing files.
+             </Dialog.Description>
+             
+             <div className="grid grid-cols-2 gap-4">
+                <button 
+                  onClick={() => initProject("new")}
+                  className="flex flex-col items-center justify-center gap-3 p-6 rounded border border-border bg-black/20 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                >
+                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <FilePlus className="w-5 h-5 text-primary" />
+                   </div>
+                   <span className="font-medium text-sm">New Project</span>
+                </button>
+
+                <button 
+                  onClick={() => initProject("import")}
+                  className="flex flex-col items-center justify-center gap-3 p-6 rounded border border-border bg-black/20 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                >
+                   <div className="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                      <FolderUp className="w-5 h-5 text-blue-500" />
+                   </div>
+                   <span className="font-medium text-sm">Import ZIP</span>
+                </button>
+             </div>
+             
+             <div className="mt-6 flex justify-end">
+                <button 
+                  onClick={() => setShowProjectModal(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                   Cancel
+                </button>
+             </div>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
     </Layout>
   );
 }

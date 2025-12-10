@@ -11,6 +11,7 @@ interface FileTreeProps {
   onAddFile?: (parentId: string | null) => void;
   onAddFolder?: (parentId: string | null) => void;
   onDelete?: (id: string) => void;
+  projectName?: string; // Add project name prop
 }
 
 export function FileTree({ 
@@ -20,7 +21,8 @@ export function FileTree({
   onToggleFolder,
   onAddFile,
   onAddFolder,
-  onDelete
+  onDelete,
+  projectName = "Explorer"
 }: FileTreeProps) {
   
   const renderNode = (node: FileNode, depth: number = 0) => {
@@ -91,10 +93,10 @@ export function FileTree({
   };
 
   return (
-    <div className="w-60 bg-[#111] border-r border-border flex flex-col h-full">
+    <div className="w-60 bg-[#111] border-r border-border flex flex-col h-full flex-shrink-0">
       <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-[#1a1a1a]">
-        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Explorer</span>
-        <div className="flex items-center gap-1">
+        <span className="text-xs font-bold uppercase tracking-wider text-muted-foreground truncate pr-2" title={projectName}>{projectName}</span>
+        <div className="flex items-center gap-1 flex-shrink-0">
           <button 
             className="p-1 hover:bg-white/10 rounded text-muted-foreground hover:text-foreground" 
             title="New File"
