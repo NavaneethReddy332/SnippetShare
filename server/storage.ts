@@ -154,7 +154,8 @@ export default function App() {
       ...insertSnippet,
       id,
       createdAt: new Date(),
-      views: "0"
+      views: "0",
+      isPrivate: insertSnippet.isPrivate ?? false
     };
     this.snippets.set(id, snippet);
     return snippet;
@@ -186,7 +187,8 @@ export default function App() {
       ...insertProject,
       id,
       createdAt: new Date(),
-      views: "0"
+      views: "0",
+      isPrivate: insertProject.isPrivate ?? false
     };
     this.projects.set(id, project);
     return project;
