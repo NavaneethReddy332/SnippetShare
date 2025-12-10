@@ -179,11 +179,11 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="h-[calc(100vh-6rem)] relative flex flex-col gap-2 group/layout">
+      <div className="h-full relative flex flex-col group/layout">
         
         {/* Compact Toolbar - Only Visible in Snippet Mode */}
         {mode === "snippet" && (
-          <div className="flex items-center gap-2 p-1 border-b border-border/50 pb-2">
+          <div className="flex items-center gap-2 p-1 border-b border-border/50 bg-[#0d0d0d] z-10">
             
             {/* Mode Switcher */}
             <div className="flex bg-card border border-border rounded-sm p-0.5">
@@ -250,7 +250,7 @@ export default function Home() {
         )}
 
         {/* Editor Area */}
-        <div className="flex-1 min-h-0 flex border border-border rounded-sm overflow-hidden bg-[#0d0d0d] relative">
+        <div className={`flex-1 min-h-0 flex bg-[#0d0d0d] relative ${mode === 'project' ? '' : 'border-t border-border/50'}`}>
           {mode === "project" && (
             <FileTree 
               files={files} 
