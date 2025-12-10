@@ -40,6 +40,7 @@ export const snippets = pgTable("snippets", {
 export const insertSnippetSchema = createInsertSchema(snippets).omit({
   id: true,
   createdAt: true,
+  views: true,
 });
 
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;
@@ -57,6 +58,7 @@ export const projects = pgTable("projects", {
 export const insertProjectSchema = createInsertSchema(projects).omit({
   id: true,
   createdAt: true,
+  views: true,
 });
 
 export type InsertProject = z.infer<typeof insertProjectSchema>;

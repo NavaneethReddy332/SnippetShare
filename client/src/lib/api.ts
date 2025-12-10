@@ -1,4 +1,4 @@
-import type { Snippet, Project, FileNode } from "@shared/schema";
+import type { Snippet, Project, FileNode, User } from "@shared/schema";
 
 export interface SnippetCreate {
   title: string;
@@ -15,7 +15,77 @@ export interface ProjectCreate {
   views: string;
 }
 
+export interface AuthCredentials {
+  username: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  user: { id: string; username: string };
+}
+
+export interface UserStats {
+  totalSnippets: number;
+  totalViews: number;
+  thisMonth: number;
+}
+
 export const api = {
+  auth: {
+    login: async (credentials: AuthCredentials): Promise<AuthResponse> => {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Login failed");
+      }
+      return res.json();
+    },
+
+    register: async (credentials: AuthCredentials): Promise<AuthResponse> => {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(credentials),
+      });
+      if (!res.ok) {
+        const error = await res.json();
+        throw new Error(error.error || "Registration failed");
+      }
+      return res.json();
+    },
+
+    logout: async (): Promise<void> => {
+      const res = await fetch("/api/auth/logout", { method: "POST" });
+      if (!res.ok) throw new Error("Logout failed");
+    },
+
+    me: async (): Promise<AuthResponse | null> => {
+      const res = await fetch("/api/auth/me");
+      if (!res.ok) return null;
+      return res.json();
+    },
+
+    updateProfile: async (data: { username?: string }): Promise<AuthResponse> => {
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update profile");
+      return res.json();
+    },
+
+    getStats: async (): Promise<UserStats> => {
+      const res = await fetch("/api/auth/stats");
+      if (!res.ok) throw new Error("Failed to fetch stats");
+      return res.json();
+    },
+  },
+
   snippets: {
     getAll: async (): Promise<Snippet[]> => {
       const res = await fetch("/api/snippets");

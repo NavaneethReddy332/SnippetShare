@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Highlight, themes } from "prism-react-renderer";
 import { Copy, Check, FileCode, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,6 +25,8 @@ export function CodeEditor({
   const [code, setCode] = useState(initialCode);
   const [copied, setCopied] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const preRef = useRef<HTMLPreElement>(null);
 
   useEffect(() => {
     setCode(initialCode);
@@ -62,7 +64,13 @@ export function CodeEditor({
     setIsFullscreen(!isFullscreen);
   };
 
-  // Simple line number generation
+  const handleScroll = useCallback(() => {
+    if (textareaRef.current && preRef.current) {
+      preRef.current.scrollTop = textareaRef.current.scrollTop;
+      preRef.current.scrollLeft = textareaRef.current.scrollLeft;
+    }
+  }, []);
+
   const lineNumbers = code.split('\n').map((_, i) => i + 1);
 
   return (
@@ -102,19 +110,57 @@ export function CodeEditor({
               ))}
             </div>
             
-            {/* Textarea for editing */}
-            <textarea
-              value={code}
-              onChange={handleChange}
-              onPaste={handlePaste}
-              spellCheck={false}
-              autoComplete="off"
-              autoCorrect="off"
-              autoCapitalize="off"
-              className="flex-1 p-2 bg-transparent text-[#e0e0e0] outline-none resize-none font-mono text-xs caret-primary selection:bg-primary/20 whitespace-pre overflow-auto"
-              style={{ tabSize: 2, lineHeight: '20px', minHeight: '100%' }}
-              placeholder="// Code here..."
-            />
+            {/* Editor container with syntax highlighting overlay */}
+            <div className="flex-1 relative">
+              {/* Syntax highlighted layer (behind) */}
+              <Highlight
+                theme={themes.vsDark}
+                code={code || " "}
+                language={language}
+              >
+                {({ className: highlightClass, style, tokens, getLineProps, getTokenProps }) => (
+                  <pre
+                    ref={preRef}
+                    className={`${highlightClass} absolute inset-0 p-2 font-mono text-xs overflow-auto pointer-events-none`}
+                    style={{
+                      ...style,
+                      backgroundColor: 'transparent',
+                      margin: 0,
+                      lineHeight: '20px',
+                      tabSize: 2,
+                      whiteSpace: 'pre',
+                    }}
+                    aria-hidden="true"
+                  >
+                    {tokens.map((line, i) => (
+                      <div key={i} {...getLineProps({ line })} style={{ minHeight: '20px' }}>
+                        {line.map((token, key) => (
+                          <span key={key} {...getTokenProps({ token })} />
+                        ))}
+                        {line.length === 1 && line[0].empty && '\n'}
+                      </div>
+                    ))}
+                  </pre>
+                )}
+              </Highlight>
+              
+              {/* Textarea for editing (on top, transparent text) */}
+              <textarea
+                ref={textareaRef}
+                value={code}
+                onChange={handleChange}
+                onPaste={handlePaste}
+                onScroll={handleScroll}
+                spellCheck={false}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary selection:bg-primary/20 whitespace-pre overflow-auto"
+                style={{ tabSize: 2, lineHeight: '20px', caretColor: 'hsl(var(--primary))' }}
+                placeholder="// Code here..."
+                data-testid="textarea-code"
+              />
+            </div>
           </div>
         )}
       </div>

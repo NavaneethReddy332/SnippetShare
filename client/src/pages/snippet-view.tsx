@@ -91,10 +91,10 @@ export default function SnippetView() {
 
   return (
     <Layout>
-      <div className="flex-1 overflow-auto p-6">
-        <div className="max-w-5xl mx-auto space-y-6">
+      <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
+        <div className="w-full max-w-3xl mx-auto space-y-6">
           
-          <div className="bg-card border border-border rounded-lg overflow-hidden">
+          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
             <div className="p-6 border-b border-border">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="space-y-3">

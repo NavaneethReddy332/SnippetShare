@@ -1,14 +1,122 @@
-import type { Express } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertSnippetSchema, insertProjectSchema } from "@shared/schema";
+import { insertSnippetSchema, insertProjectSchema, insertUserSchema } from "@shared/schema";
 import { fromError } from "zod-validation-error";
+import session from "express-session";
+import MemoryStore from "memorystore";
+
+declare module "express-session" {
+  interface SessionData {
+    userId?: string;
+  }
+}
+
+const MemoryStoreSession = MemoryStore(session);
 
 export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
   
+  app.use(session({
+    secret: process.env.SESSION_SECRET || 'snippetshare-secret-key',
+    resave: false,
+    saveUninitialized: false,
+    store: new MemoryStoreSession({
+      checkPeriod: 86400000
+    }),
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      httpOnly: true,
+      maxAge: 7 * 24 * 60 * 60 * 1000
+    }
+  }));
+
+  // Auth Routes
+  app.post("/api/auth/register", async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+      
+      const existing = await storage.getUserByUsername(username);
+      if (existing) {
+        return res.status(400).json({ error: "Username already exists" });
+      }
+      
+      const user = await storage.createUser({ username, password });
+      req.session.userId = user.id;
+      
+      res.status(201).json({ user: { id: user.id, username: user.username } });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to register" });
+    }
+  });
+
+  app.post("/api/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { username, password } = req.body;
+      
+      if (!username || !password) {
+        return res.status(400).json({ error: "Username and password are required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user || user.password !== password) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
+      
+      req.session.userId = user.id;
+      res.json({ user: { id: user.id, username: user.username } });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to login" });
+    }
+  });
+
+  app.post("/api/auth/logout", (req: Request, res: Response) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.json({ message: "Logged out" });
+    });
+  });
+
+  app.get("/api/auth/me", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    
+    try {
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(401).json({ error: "User not found" });
+      }
+      res.json({ user: { id: user.id, username: user.username } });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get user" });
+    }
+  });
+
+  app.get("/api/auth/stats", async (req: Request, res: Response) => {
+    try {
+      const snippets = await storage.getSnippets();
+      const totalSnippets = snippets.length;
+      const totalViews = snippets.reduce((sum, s) => sum + parseInt(s.views || "0"), 0);
+      
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const thisMonth = snippets.filter(s => new Date(s.createdAt) >= monthStart).length;
+      
+      res.json({ totalSnippets, totalViews, thisMonth });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get stats" });
+    }
+  });
+
   // Snippet Routes
   app.get("/api/snippets", async (req, res) => {
     try {
