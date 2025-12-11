@@ -427,45 +427,47 @@ export default function Home() {
           >
             <PanelRight className="w-3 h-3" />
           </button>
+
+          <div className="h-4 w-px bg-border/50 mx-1"></div>
+
+          <div className="flex items-center">
+            {tabs.map((tab) => (
+              <div
+                key={tab.id}
+                onClick={() => setActiveTabId(tab.id)}
+                className={`group flex items-center gap-1 px-2 py-1 text-xs cursor-pointer transition-colors ${
+                  tab.id === activeTabId
+                    ? 'bg-primary/10 text-primary border-b-2 border-b-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+                }`}
+                data-testid={`tab-${tab.id}`}
+              >
+                {tab.hasUnsavedChanges && (
+                  <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
+                )}
+                <FileCode className="w-3 h-3" />
+                <span className="max-w-16 truncate text-[11px]">{tab.title || "untitled"}</span>
+                <button
+                  onClick={(e) => closeTab(tab.id, e)}
+                  className="ml-0.5 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+                  data-testid={`close-tab-${tab.id}`}
+                >
+                  <X className="w-2.5 h-2.5" />
+                </button>
+              </div>
+            ))}
+            {tabs.length < 3 && (
+              <button
+                onClick={addNewTab}
+                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                data-testid="button-add-tab"
+              >
+                <Plus className="w-3 h-3" />
+              </button>
+            )}
+          </div>
         </div>
         </FadeIn>
-
-        <div className="flex items-center bg-editor-bg border-b border-border/30 px-1">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTabId(tab.id)}
-              className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs border-r border-border/30 transition-colors ${
-                tab.id === activeTabId
-                  ? 'bg-card text-foreground border-t-2 border-t-primary'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
-              }`}
-              data-testid={`tab-${tab.id}`}
-            >
-              {tab.hasUnsavedChanges && (
-                <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
-              )}
-              <FileCode className="w-3 h-3" />
-              <span className="max-w-20 truncate">{tab.title || "untitled"}</span>
-              <button
-                onClick={(e) => closeTab(tab.id, e)}
-                className="ml-1 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
-                data-testid={`close-tab-${tab.id}`}
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </button>
-          ))}
-          {tabs.length < 3 && (
-            <button
-              onClick={addNewTab}
-              className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
-              data-testid="button-add-tab"
-            >
-              <Plus className="w-3 h-3" />
-            </button>
-          )}
-        </div>
 
         <div className="flex-1 min-h-0 flex bg-editor-bg">
           <div className="flex-1 flex">
