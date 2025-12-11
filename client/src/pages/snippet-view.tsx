@@ -66,29 +66,59 @@ export default function SnippetView() {
   if (requiresPassword) {
     return (
       <Layout>
-        <div className="flex-1 flex items-center justify-center p-6 bg-black">
-          <div className="w-full max-w-sm text-center space-y-8">
-            <h1 className="text-red-500 text-xl font-medium">
-              This snippet is password protected
-            </h1>
-            <div className="relative">
-              <input
-                type="password"
-                placeholder="Enter password"
-                value={passwordInput}
-                onChange={(e) => {
-                  setPasswordInput(e.target.value);
-                  setPasswordError("");
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
-                className="w-full bg-transparent border-0 border-b border-white/30 text-white placeholder:text-white/40 py-3 px-1 text-center focus:outline-none focus:border-white/60 transition-colors"
-                data-testid="input-snippet-password"
-                autoFocus
-              />
+        <div className="flex-1 flex items-center justify-center p-6">
+          <div className="w-full max-w-sm">
+            <div className="bg-card border border-border rounded-lg p-8 text-center space-y-6">
+              <div className="flex justify-center">
+                <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                  <Lock className="w-8 h-8 text-primary" />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <h1 className="text-xl font-semibold text-foreground">
+                  Password Protected
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  This snippet requires a password to view
+                </p>
+              </div>
+              <div className="space-y-4">
+                <input
+                  type="password"
+                  placeholder="Enter password"
+                  value={passwordInput}
+                  onChange={(e) => {
+                    setPasswordInput(e.target.value);
+                    setPasswordError("");
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                  className="w-full bg-background border border-border rounded-md text-foreground placeholder:text-muted-foreground py-3 px-4 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                  data-testid="input-snippet-password"
+                  autoFocus
+                />
+                {passwordError && (
+                  <p className="text-sm text-destructive">{passwordError}</p>
+                )}
+                <button
+                  onClick={handlePasswordSubmit}
+                  disabled={verifying || !passwordInput.trim()}
+                  className="w-full bg-primary text-primary-foreground font-medium py-3 px-4 rounded-md hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
+                  data-testid="button-unlock"
+                >
+                  {verifying ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <Lock className="w-4 h-4" />
+                      Unlock Snippet
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-            {passwordError && (
-              <p className="text-sm text-red-500">{passwordError}</p>
-            )}
           </div>
         </div>
       </Layout>
