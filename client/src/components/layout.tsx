@@ -73,7 +73,7 @@ export function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
         ) : (
           <button 
             onClick={onLoginClick}
-            className="h-8 px-4 flex items-center gap-1.5 text-xs font-semibold rounded bg-primary text-black hover:bg-primary/90 transition-colors"
+            className="h-8 px-4 flex items-center gap-1.5 text-xs font-semibold rounded border border-border text-foreground hover:bg-accent transition-colors"
             data-testid="button-login"
           >
             <LogIn className="w-3.5 h-3.5" />

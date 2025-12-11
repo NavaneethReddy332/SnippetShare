@@ -208,19 +208,20 @@ export default function SnippetView() {
             </div>
 
             {snippet.isPrivate && (
-              <div className="bg-red-500/5 border-b border-red-500/20 text-red-500/90 px-6 py-3 flex items-center gap-3">
+              <div className="bg-muted border-b border-border text-muted-foreground px-6 py-3 flex items-center gap-3">
                 <Shield className="w-4 h-4 flex-shrink-0" />
                 <p className="text-sm">Private snippet - only visible to you and those with the link.</p>
               </div>
             )}
 
-            <div className="p-0">
+            <div className="p-0 max-h-96 overflow-auto">
               <CodeEditor 
                 initialCode={snippet.code} 
                 language={snippet.language} 
                 readOnly={true} 
                 title={snippet.title}
                 className="border-none rounded-none"
+                compact={true}
               />
             </div>
           </div>

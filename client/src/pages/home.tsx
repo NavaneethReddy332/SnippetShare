@@ -4,7 +4,7 @@ import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
 import { useLocation } from "wouter";
-import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban } from "lucide-react";
+import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 export default function Home() {
@@ -15,6 +15,7 @@ export default function Home() {
   const [language, setLanguage] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
   const [autoDetected, setAutoDetected] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
@@ -52,6 +53,7 @@ export default function Home() {
     const finalTitle = title.trim() || "untitled";
     const titleWithExt = finalTitle.endsWith(ext) ? finalTitle : `${finalTitle}${ext}`;
     
+    setSaving(true);
     try {
       const snippet = await api.snippets.create({ 
         title: titleWithExt, 
@@ -64,6 +66,8 @@ export default function Home() {
       setLocation(`/snippet/${snippet.id}`);
     } catch (error) {
       toast.error("Failed to save snippet");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -139,11 +143,12 @@ export default function Home() {
 
           <button 
             onClick={handleSave}
-            className="h-7 px-4 bg-primary text-black text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1.5"
+            disabled={saving}
+            className="h-7 px-4 bg-primary text-primary-foreground text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="button-save"
           >
-            <Plus className="w-3 h-3" />
-            Save
+            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+            {saving ? "Saving..." : "Save"}
           </button>
         </div>
 
