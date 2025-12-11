@@ -29,6 +29,9 @@ interface TabData {
   hasUnsavedChanges: boolean;
 }
 
+const TABS_STORAGE_KEY = 'snippetshare_tabs';
+const ACTIVE_TAB_STORAGE_KEY = 'snippetshare_active_tab';
+
 const createNewTab = (): TabData => ({
   id: crypto.randomUUID(),
   code: "",
@@ -40,12 +43,35 @@ const createNewTab = (): TabData => ({
   hasUnsavedChanges: false,
 });
 
+const loadTabsFromStorage = (): { tabs: TabData[], activeTabId: string } => {
+  try {
+    const savedTabs = localStorage.getItem(TABS_STORAGE_KEY);
+    const savedActiveId = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    
+    if (savedTabs) {
+      const parsed = JSON.parse(savedTabs) as TabData[];
+      if (parsed.length > 0) {
+        const activeId = savedActiveId && parsed.find(t => t.id === savedActiveId) 
+          ? savedActiveId 
+          : parsed[0].id;
+        return { tabs: parsed, activeTabId: activeId };
+      }
+    }
+  } catch (e) {
+    console.error('Failed to load tabs from storage:', e);
+  }
+  
+  const defaultTab = createNewTab();
+  return { tabs: [defaultTab], activeTabId: defaultTab.id };
+};
+
 export default function Home() {
   const [_, setLocation] = useLocation();
   const searchString = useSearch();
   
-  const [tabs, setTabs] = useState<TabData[]>([createNewTab()]);
-  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
+  const { tabs: initialTabs, activeTabId: initialActiveId } = loadTabsFromStorage();
+  const [tabs, setTabs] = useState<TabData[]>(initialTabs);
+  const [activeTabId, setActiveTabId] = useState(initialActiveId);
   const [saving, setSaving] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [findDialogOpen, setFindDialogOpen] = useState(false);
@@ -90,6 +116,16 @@ export default function Home() {
       updateActiveTab({ hasUnsavedChanges: true });
     }
   }, [activeTab.code, activeTab.title]);
+
+  // Save tabs to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(tabs));
+      localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTabId);
+    } catch (e) {
+      console.error('Failed to save tabs to storage:', e);
+    }
+  }, [tabs, activeTabId]);
 
   const handleCodeChange = useCallback((newCode: string) => {
     const tab = tabs.find(t => t.id === activeTabId);
@@ -351,50 +387,65 @@ export default function Home() {
           <div className="h-4 w-px bg-border/50 mx-1"></div>
 
           <div className="flex items-center">
-            {tabs.map((tab) => (
-              <div
-                key={tab.id}
-                onClick={() => setActiveTabId(tab.id)}
-                className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer transition-colors border-b-2 ${
-                  tab.id === activeTabId
-                    ? 'bg-card text-foreground border-b-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50 border-b-transparent'
-                }`}
-                data-testid={`tab-${tab.id}`}
-              >
-                {tab.hasUnsavedChanges && (
-                  <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
-                )}
-                <input
-                  type="text"
-                  value={tab.title || ""}
-                  placeholder="Untitled"
-                  onChange={(e) => {
-                    if (tab.id === activeTabId) {
-                      updateActiveTab({ title: e.target.value });
-                    }
+            <AnimatePresence mode="popLayout">
+              {tabs.map((tab) => (
+                <motion.div
+                  key={tab.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.8, width: 0 }}
+                  animate={{ opacity: 1, scale: 1, width: "auto" }}
+                  exit={{ opacity: 0, scale: 0.8, width: 0 }}
+                  transition={{ 
+                    duration: 0.2, 
+                    ease: "easeOut",
+                    layout: { duration: 0.2 }
                   }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-20 bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground"
-                  data-testid={`input-tab-title-${tab.id}`}
-                />
-                <button
-                  onClick={(e) => closeTab(tab.id, e)}
-                  className="p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
-                  data-testid={`close-tab-${tab.id}`}
+                  onClick={() => setActiveTabId(tab.id)}
+                  className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer transition-colors border-b-2 ${
+                    tab.id === activeTabId
+                      ? 'bg-card text-foreground border-b-primary'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-card/50 border-b-transparent'
+                  }`}
+                  data-testid={`tab-${tab.id}`}
                 >
-                  <X className="w-2.5 h-2.5" />
-                </button>
-              </div>
-            ))}
+                  {tab.hasUnsavedChanges && (
+                    <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
+                  )}
+                  <input
+                    type="text"
+                    value={tab.title || ""}
+                    placeholder="Untitled"
+                    onChange={(e) => {
+                      if (tab.id === activeTabId) {
+                        updateActiveTab({ title: e.target.value });
+                      }
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-20 bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground"
+                    data-testid={`input-tab-title-${tab.id}`}
+                  />
+                  <motion.button
+                    onClick={(e) => closeTab(tab.id, e)}
+                    className="p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                    data-testid={`close-tab-${tab.id}`}
+                  >
+                    <X className="w-2.5 h-2.5" />
+                  </motion.button>
+                </motion.div>
+              ))}
+            </AnimatePresence>
             {tabs.length < 3 && (
-              <button
+              <motion.button
                 onClick={addNewTab}
                 className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
                 data-testid="button-add-tab"
               >
                 <Plus className="w-3 h-3" />
-              </button>
+              </motion.button>
             )}
           </div>
 
