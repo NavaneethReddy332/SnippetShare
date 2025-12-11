@@ -155,9 +155,9 @@ export function CodeEditor({
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary selection:bg-primary/20 whitespace-pre overflow-auto"
+                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary selection:bg-primary/20 whitespace-pre overflow-auto placeholder:text-foreground/30"
                 style={{ tabSize: 2, lineHeight: '20px', caretColor: 'hsl(var(--primary))' }}
-                placeholder="// Code here..."
+                placeholder="// Start typing your code here...&#10;// Tip: Language will be auto-detected as you type"
                 data-testid="textarea-code"
               />
             </div>
@@ -166,18 +166,18 @@ export function CodeEditor({
       </div>
       
       {/* Status Bar */}
-      <div className="flex-none bg-panel-header-bg border-t border-white/5 px-2 py-1 flex items-center justify-between text-[10px] text-muted-foreground font-mono uppercase tracking-wider">
+      <div className="flex-none bg-panel-header-bg border-t border-white/5 px-2 py-1 flex items-center justify-between text-[10px] font-mono uppercase tracking-wider">
         <div className="flex gap-3">
-          <span className="text-primary">{language}</span>
-          <span>{code.length} chars</span>
-          <span>{lineNumbers.length} lines</span>
+          <span className="text-primary font-medium">{language}</span>
+          <span className="text-foreground/60">{code.length} chars</span>
+          <span className="text-foreground/60">{lineNumbers.length} lines</span>
         </div>
         <div className="flex items-center gap-2">
-           <button onClick={handleCopy} className="hover:text-primary transition-colors">
+           <button onClick={handleCopy} className="text-foreground/60 hover:text-primary transition-colors font-medium">
              {copied ? "COPIED" : "COPY"}
            </button>
            <div className="w-px h-3 bg-white/10"></div>
-           <span>{readOnly ? 'READ' : 'EDIT'}</span>
+           <span className="text-foreground/60">{readOnly ? 'READ' : 'EDIT'}</span>
         </div>
       </div>
     </div>

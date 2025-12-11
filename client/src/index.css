@@ -49,6 +49,47 @@
 }
 
 :root {
+  /* Light mode - clean and professional */
+  --background: 0 0% 98%; 
+  --foreground: 0 0% 10%; 
+
+  /* Semantic Workspace Definitions */
+  --workspace-bg: 0 0% 98%;        /* Main background */
+  --sidebar-bg: 0 0% 95%;          /* Explorer sidebar */
+  --activity-bar-bg: 0 0% 97%;     /* Left/Top Icon bar */
+  --editor-bg: 0 0% 100%;          /* Code Editor background */
+  --editor-gutter-bg: 0 0% 96%;    /* Line numbers */
+  --panel-header-bg: 0 0% 94%;     /* Section headers */
+
+  --card: 0 0% 100%; 
+  --card-foreground: 0 0% 10%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 10%;
+
+  --primary: 0 0% 15%; 
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 10%;
+
+  --muted: 0 0% 94%;
+  --muted-foreground: 0 0% 45%;
+
+  --accent: 0 0% 92%; 
+  --accent-foreground: 0 0% 10%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+
+  --border: 0 0% 85%;
+  --input: 0 0% 90%;
+  --ring: 0 0% 40%;
+
+  --radius: 0.125rem; /* Very sharp corners */
+}
+
+.dark {
   /* Ultra dark, high contrast, utility focused */
   --background: 0 0% 0%; 
   --foreground: 0 0% 90%; 
@@ -85,8 +126,6 @@
   --border: 0 0% 20%;
   --input: 0 0% 15%;
   --ring: 0 0% 60%;
-
-  --radius: 0.125rem; /* Very sharp corners */
 }
 
 body {

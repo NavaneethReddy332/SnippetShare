@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
 import { useLocation } from "wouter";
-import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2 } from "lucide-react";
+import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle } from "lucide-react";
 import { toast } from "sonner";
 import { PageTransition, FadeIn } from "@/components/animations";
 
@@ -17,6 +17,18 @@ export default function Home() {
   const [isPrivate, setIsPrivate] = useState(false);
   const [autoDetected, setAutoDetected] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const initialLoad = useRef(true);
+
+  useEffect(() => {
+    if (initialLoad.current) {
+      initialLoad.current = false;
+      return;
+    }
+    if (code.trim() || title.trim()) {
+      setHasUnsavedChanges(true);
+    }
+  }, [code, title]);
 
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
@@ -62,6 +74,7 @@ export default function Home() {
         language, 
         isPrivate
       });
+      setHasUnsavedChanges(false);
       toast.success("Snippet Saved");
       setLocation(`/snippet/${snippet.id}`);
     } catch (error) {
@@ -100,13 +113,18 @@ export default function Home() {
 
           <div className="h-4 w-px bg-border/50 mx-1"></div>
 
-          <div className="flex-1">
+          <div className="flex-1 flex items-center gap-2">
+            {hasUnsavedChanges && (
+              <span title="Unsaved changes">
+                <Circle className="w-2 h-2 fill-primary text-primary flex-shrink-0" />
+              </span>
+            )}
             <input 
               type="text" 
-              placeholder="Snippet Title..." 
+              placeholder="Enter snippet title..." 
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-transparent px-2 py-1 text-sm text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium h-7"
+              className="w-full bg-transparent px-2 py-1 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium h-7"
               data-testid="input-title"
             />
           </div>

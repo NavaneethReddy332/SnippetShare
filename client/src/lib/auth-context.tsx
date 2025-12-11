@@ -24,7 +24,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const result = await api.auth.me();
       setUser(result?.user || null);
-    } catch {
+    } catch (error: any) {
+      // 401 is expected for unauthenticated users - not an error
       setUser(null);
     }
   };

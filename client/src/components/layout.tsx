@@ -1,45 +1,41 @@
 import { Link, useLocation } from "wouter";
-import { Terminal, User, Plus, LayoutDashboard, AlertTriangle, X, LogIn, LogOut } from "lucide-react";
+import { Terminal, User, Plus, LayoutDashboard, AlertTriangle, X, LogIn, LogOut, Sun, Moon } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useTheme } from "@/lib/theme-context";
 import { AuthModal } from "./auth-modal";
-import { motion, AnimatePresence } from "framer-motion";
 
 export function GuestWarningBanner({ onLoginClick }: { onLoginClick: () => void }) {
   const [dismissed, setDismissed] = useState(false);
-  const { user } = useAuth();
+  const { user, isLoading } = useAuth();
+  
+  // Don't show while loading or if user is logged in
+  if (isLoading || user || dismissed) return null;
   
   return (
-    <AnimatePresence>
-      {!dismissed && !user && (
-        <motion.div 
-          initial={{ opacity: 0, height: 0 }}
-          animate={{ opacity: 1, height: "auto" }}
-          exit={{ opacity: 0, height: 0 }}
-          transition={{ duration: 0.2, ease: "easeOut" }}
-          className="bg-muted border-b border-border px-4 py-2 flex items-center justify-center gap-3" 
-          data-testid="guest-warning-banner"
-        >
-          <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          <p className="text-sm text-muted-foreground font-medium">
-            Your snippets may be lost without an account. <button onClick={onLoginClick} className="underline hover:text-foreground transition-colors" data-testid="link-sign-in">Sign in</button> to save your work permanently.
-          </p>
-          <button 
-            onClick={() => setDismissed(true)}
-            className="p-1 rounded hover:bg-accent transition-colors ml-2"
-            data-testid="button-dismiss-warning"
-          >
-            <X className="w-3 h-3 text-muted-foreground" />
-          </button>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <div 
+      className="bg-card/50 border-b border-border/50 px-4 py-1.5 flex items-center justify-center gap-2" 
+      data-testid="guest-warning-banner"
+    >
+      <AlertTriangle className="w-3 h-3 text-muted-foreground/70 flex-shrink-0" />
+      <p className="text-xs text-muted-foreground">
+        Guest mode - <button onClick={onLoginClick} className="text-primary hover:underline transition-colors font-medium" data-testid="link-sign-in">Sign in</button> to save permanently
+      </p>
+      <button 
+        onClick={() => setDismissed(true)}
+        className="p-0.5 rounded hover:bg-accent/50 transition-colors ml-1"
+        data-testid="button-dismiss-warning"
+      >
+        <X className="w-2.5 h-2.5 text-muted-foreground/70" />
+      </button>
+    </div>
   );
 }
 
 export function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
   const [location] = useLocation();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
 
   const isActive = (path: string) => location === path;
 
@@ -60,10 +56,19 @@ export function Navbar({ onLoginClick }: { onLoginClick: () => void }) {
         
         <div className="w-px h-3 bg-border mx-1"></div>
 
-        <Link href="/dashboard" className={`h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded transition-colors ${isActive('/dashboard') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="Dashboard">
+        <Link href="/dashboard" className={`h-8 px-3 flex items-center gap-1.5 text-xs font-medium rounded transition-colors ${isActive('/dashboard') ? 'text-primary bg-white/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`} title="Browse Public Snippets">
           <LayoutDashboard className="w-3.5 h-3.5" />
-          <span>Dash</span>
+          <span>Browse</span>
         </Link>
+
+        <button 
+          onClick={toggleTheme}
+          className="h-8 w-8 flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-white/5 rounded transition-colors"
+          title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          data-testid="button-theme-toggle"
+        >
+          {theme === "dark" ? <Sun className="w-3.5 h-3.5" /> : <Moon className="w-3.5 h-3.5" />}
+        </button>
 
         {user ? (
           <>
