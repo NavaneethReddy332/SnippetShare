@@ -11,17 +11,17 @@ export function GuestWarningBanner({ onLoginClick }: { onLoginClick: () => void 
   if (dismissed || user) return null;
   
   return (
-    <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2 flex items-center justify-center gap-3" data-testid="guest-warning-banner">
-      <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-      <p className="text-sm text-amber-500/90 font-medium">
-        Your snippets may be lost without an account. <button onClick={onLoginClick} className="underline hover:text-amber-400" data-testid="link-sign-in">Sign in</button> to save your work permanently.
+    <div className="bg-muted border-b border-border px-4 py-2 flex items-center justify-center gap-3" data-testid="guest-warning-banner">
+      <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+      <p className="text-sm text-muted-foreground font-medium">
+        Your snippets may be lost without an account. <button onClick={onLoginClick} className="underline hover:text-foreground" data-testid="link-sign-in">Sign in</button> to save your work permanently.
       </p>
       <button 
         onClick={() => setDismissed(true)}
-        className="p-1 rounded hover:bg-amber-500/20 transition-colors ml-2"
+        className="p-1 rounded hover:bg-accent transition-colors ml-2"
         data-testid="button-dismiss-warning"
       >
-        <X className="w-3 h-3 text-amber-500/70" />
+        <X className="w-3 h-3 text-muted-foreground" />
       </button>
     </div>
   );
