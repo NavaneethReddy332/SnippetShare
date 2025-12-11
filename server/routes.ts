@@ -121,6 +121,100 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/auth/profile", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { username } = req.body;
+      
+      if (!username || typeof username !== 'string' || !username.trim()) {
+        return res.status(400).json({ error: "Username is required" });
+      }
+
+      const existingUser = await storage.getUserByUsername(username.trim());
+      if (existingUser && existingUser.id !== req.session.userId) {
+        return res.status(400).json({ error: "Username already taken" });
+      }
+
+      const updatedUser = await storage.updateUser(req.session.userId, { username: username.trim() });
+      if (!updatedUser) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ user: { id: updatedUser.id, username: updatedUser.username } });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to update profile" });
+    }
+  });
+
+  app.patch("/api/auth/password", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { currentPassword, newPassword } = req.body;
+      
+      if (!currentPassword || !newPassword) {
+        return res.status(400).json({ error: "Current password and new password are required" });
+      }
+
+      if (newPassword.length < 4) {
+        return res.status(400).json({ error: "New password must be at least 4 characters" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (user.password !== currentPassword) {
+        return res.status(401).json({ error: "Current password is incorrect" });
+      }
+
+      await storage.updateUser(req.session.userId, { password: newPassword });
+      res.json({ message: "Password updated successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to change password" });
+    }
+  });
+
+  app.delete("/api/auth/account", async (req: Request, res: Response) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+
+    try {
+      const { password } = req.body;
+      
+      if (!password) {
+        return res.status(400).json({ error: "Password is required" });
+      }
+
+      const user = await storage.getUser(req.session.userId);
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      if (user.password !== password) {
+        return res.status(401).json({ error: "Password is incorrect" });
+      }
+
+      await storage.deleteUser(req.session.userId);
+      
+      req.session.destroy((err) => {
+        if (err) {
+          console.error("Session destroy error:", err);
+        }
+        res.json({ message: "Account deleted successfully" });
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete account" });
+    }
+  });
+
   // Snippet Routes - Public snippets (for non-authenticated users)
   app.get("/api/snippets/public", async (req, res) => {
     try {

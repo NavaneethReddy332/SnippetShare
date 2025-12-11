@@ -19,6 +19,8 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
+  updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<void>;
   
   getSnippets(userId?: string): Promise<Snippet[]>;
   getPublicSnippets(): Promise<Snippet[]>;
@@ -64,6 +66,17 @@ export class DbStorage implements IStorage {
     const id = nanoid();
     const result = await this.db.insert(users).values({ ...insertUser, id }).returning();
     return result[0];
+  }
+
+  async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+    const result = await this.db.update(users).set(data).where(eq(users.id, id)).returning();
+    return result[0];
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    await this.db.delete(snippets).where(eq(snippets.userId, id));
+    await this.db.delete(projects).where(eq(projects.userId, id));
+    await this.db.delete(users).where(eq(users.id, id));
   }
 
   async getSnippets(userId?: string): Promise<Snippet[]> {

@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout";
-import { User, Shield, CreditCard, AlertTriangle, Loader2, PieChart, MoreVertical, Eye, Share2, Trash2, Lock, Unlock, Pencil, ExternalLink, FileCode, Monitor, Smartphone, Globe } from "lucide-react";
+import { User, Shield, CreditCard, AlertTriangle, Loader2, PieChart, MoreVertical, Eye, Share2, Trash2, Lock, Unlock, Pencil, FileCode, Globe } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, UserStats } from "@/lib/api";
@@ -446,6 +446,43 @@ function PreferenceRow({ title, description, defaultEnabled = false }: { title: 
 }
 
 function SecurityTab() {
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleChangePassword = async () => {
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      toast.error("Please fill in all fields");
+      return;
+    }
+
+    if (newPassword.length < 4) {
+      toast.error("New password must be at least 4 characters");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("New passwords do not match");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      await api.auth.changePassword({ currentPassword, newPassword });
+      toast.success("Password changed successfully");
+      setShowPasswordForm(false);
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to change password");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="mb-8">
@@ -454,41 +491,104 @@ function SecurityTab() {
       </div>
 
       <Card className="p-5 border-border/30">
-        <h3 className="text-sm font-semibold mb-5">Authentication</h3>
-        <div className="space-y-0">
-          <SecurityRow
-            title="Password"
-            description="Last changed 30 days ago"
-            action="Change"
-            onClick={() => toast.info("Coming soon")}
-          />
-          <SecurityRow
-            title="Two-Factor Authentication"
-            description="Add an extra layer of security"
-            action="Enable"
-            onClick={() => toast.info("Coming soon")}
-          />
-        </div>
+        <h3 className="text-sm font-semibold mb-5">Change Password</h3>
+        
+        {!showPasswordForm ? (
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <p className="text-sm font-medium">Password</p>
+              <p className="text-xs text-muted-foreground mt-0.5">Update your account password</p>
+            </div>
+            <Button 
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowPasswordForm(true)}
+              data-testid="button-change-password"
+            >
+              Change
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">
+                Current Password
+              </label>
+              <input
+                type="password"
+                value={currentPassword}
+                onChange={(e) => setCurrentPassword(e.target.value)}
+                className="w-full bg-background border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                data-testid="input-current-password"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">
+                New Password
+              </label>
+              <input
+                type="password"
+                value={newPassword}
+                onChange={(e) => setNewPassword(e.target.value)}
+                className="w-full bg-background border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                data-testid="input-new-password"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">
+                Confirm New Password
+              </label>
+              <input
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-background border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/20 transition-all"
+                data-testid="input-confirm-password"
+              />
+            </div>
+            <div className="flex items-center gap-2 pt-2">
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowPasswordForm(false);
+                  setCurrentPassword("");
+                  setNewPassword("");
+                  setConfirmPassword("");
+                }}
+                data-testid="button-cancel-password"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleChangePassword}
+                disabled={saving}
+                size="sm"
+                data-testid="button-save-password"
+              >
+                {saving && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Update Password
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
 
       <Card className="p-5 border-border/30">
-        <div className="flex items-center justify-between gap-4 mb-5">
-          <h3 className="text-sm font-semibold">Active Sessions</h3>
-          <Badge variant="outline" className="text-xs">2 Devices</Badge>
-        </div>
-        
-        <div className="space-y-0">
-          <SessionItem 
-            icon={Monitor}
-            device="MacBook Pro"
-            location="San Francisco, US"
-            isActive
-          />
-          <SessionItem 
-            icon={Smartphone}
-            device="iPhone 15"
-            location="San Francisco, US"
-          />
+        <h3 className="text-sm font-semibold mb-5">Two-Factor Authentication</h3>
+        <div className="flex items-center justify-between py-2">
+          <div>
+            <p className="text-sm font-medium">2FA</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Add an extra layer of security</p>
+          </div>
+          <Button 
+            variant="ghost"
+            size="sm"
+            onClick={() => toast.info("Two-factor authentication coming soon")}
+            data-testid="button-enable-2fa"
+          >
+            Enable
+          </Button>
         </div>
       </Card>
 
@@ -506,47 +606,6 @@ function SecurityTab() {
           <Globe className="w-4 h-4" />
         </div>
       </Card>
-    </div>
-  );
-}
-
-function SecurityRow({ title, description, action, onClick }: { title: string; description: string; action: string; onClick: () => void }) {
-  return (
-    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
-      <div>
-        <p className="text-sm font-medium">{title}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-      </div>
-      <Button 
-        variant="ghost"
-        size="sm"
-        onClick={onClick}
-        data-testid={`button-${action.toLowerCase()}`}
-      >
-        {action}
-      </Button>
-    </div>
-  );
-}
-
-function SessionItem({ icon: Icon, device, location, isActive }: { icon: React.ElementType; device: string; location: string; isActive?: boolean }) {
-  return (
-    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
-      <div className="flex items-center gap-4">
-        <div className="w-9 h-9 bg-muted rounded-md flex items-center justify-center">
-          <Icon className="w-4 h-4 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="text-sm font-medium">{device}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{location}</p>
-        </div>
-      </div>
-      {isActive && (
-        <div 
-          className="w-2 h-2 bg-cyan-500 rounded-full"
-          style={{ boxShadow: '0 0 8px rgba(6, 182, 212, 0.8)' }}
-        />
-      )}
     </div>
   );
 }
@@ -604,6 +663,13 @@ function BillingTab() {
 }
 
 function DangerTab() {
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deleting, setDeleting] = useState(false);
+  const { logout } = useAuth();
+  const [_, setLocation] = useLocation();
+
   const handleDeleteAllSnippets = async () => {
     if (!confirm("Delete all snippets? This cannot be undone.")) return;
     
@@ -612,7 +678,61 @@ function DangerTab() {
       await Promise.all(snippets.map((s: { id: string }) => api.snippets.delete(s.id)));
       toast.success("All snippets deleted");
     } catch (error) {
-      toast.error("Failed to delete");
+      toast.error("Failed to delete snippets");
+    }
+  };
+
+  const handleExportData = async () => {
+    try {
+      const snippets = await api.snippets.getMy();
+      const data = {
+        exportedAt: new Date().toISOString(),
+        snippets: snippets.map(s => ({
+          title: s.title,
+          code: s.code,
+          language: s.language,
+          createdAt: s.createdAt,
+          isPrivate: s.isPrivate
+        }))
+      };
+      
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `snippetshare-export-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast.success("Data exported successfully");
+    } catch (error) {
+      toast.error("Failed to export data");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== "DELETE") {
+      toast.error("Please type DELETE to confirm");
+      return;
+    }
+
+    if (!deletePassword) {
+      toast.error("Password is required");
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      await api.auth.deleteAccount(deletePassword);
+      toast.success("Account deleted successfully");
+      logout();
+      setLocation("/");
+    } catch (error: any) {
+      toast.error(error.message || "Failed to delete account");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -633,17 +753,93 @@ function DangerTab() {
           />
           <DangerRow
             title="Export Data"
-            description="Download all your data"
+            description="Download all your data as JSON"
             buttonText="Export"
-            onClick={() => toast.info("Coming soon")}
-          />
-          <DangerRow
-            title="Delete Account"
-            description="Permanently delete your account and all data"
-            buttonText="Delete Account"
-            onClick={() => toast.info("Coming soon")}
+            onClick={handleExportData}
           />
         </div>
+      </Card>
+
+      <Card className="p-5 border-red-500/50 bg-red-500/5">
+        <h3 className="text-sm font-semibold mb-4 text-red-500">Delete Account</h3>
+        
+        {!showDeleteAccount ? (
+          <div className="flex items-center justify-between py-2">
+            <div>
+              <p className="text-sm font-medium">Permanently delete your account</p>
+              <p className="text-xs text-muted-foreground mt-0.5">This will delete all your snippets, projects, and data forever</p>
+            </div>
+            <Button 
+              variant="destructive"
+              size="sm"
+              onClick={() => setShowDeleteAccount(true)}
+              data-testid="button-show-delete-account"
+            >
+              Delete Account
+            </Button>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-md">
+              <p className="text-sm text-red-400">
+                This action is permanent and cannot be undone. All your snippets, projects, and account data will be permanently deleted.
+              </p>
+            </div>
+            
+            <div>
+              <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">
+                Enter your password
+              </label>
+              <input
+                type="password"
+                value={deletePassword}
+                onChange={(e) => setDeletePassword(e.target.value)}
+                className="w-full bg-background border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20 transition-all"
+                placeholder="Your password"
+                data-testid="input-delete-password"
+              />
+            </div>
+            
+            <div>
+              <label className="block text-xs text-muted-foreground uppercase tracking-wider mb-2 font-semibold">
+                Type "DELETE" to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full bg-background border border-border rounded-md px-3 py-2.5 text-sm focus:outline-none focus:border-red-500 focus:ring-1 focus:ring-red-500/20 transition-all"
+                placeholder="DELETE"
+                data-testid="input-delete-confirm"
+              />
+            </div>
+            
+            <div className="flex items-center gap-2 pt-2">
+              <Button 
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowDeleteAccount(false);
+                  setDeletePassword("");
+                  setDeleteConfirmText("");
+                }}
+                data-testid="button-cancel-delete"
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteAccount}
+                disabled={deleting || deleteConfirmText !== "DELETE"}
+                size="sm"
+                data-testid="button-confirm-delete-account"
+              >
+                {deleting && <Loader2 className="w-4 h-4 animate-spin mr-2" />}
+                Delete My Account Forever
+              </Button>
+            </div>
+          </div>
+        )}
       </Card>
     </div>
   );
