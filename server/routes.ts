@@ -19,6 +19,9 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
+  // Trust proxy for Replit's environment
+  app.set('trust proxy', 1);
+  
   app.use(session({
     secret: process.env.SESSION_SECRET || 'snippetshare-secret-key',
     resave: false,
@@ -27,8 +30,9 @@ export async function registerRoutes(
       checkPeriod: 86400000
     }),
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: true,
       httpOnly: true,
+      sameSite: 'none',
       maxAge: 7 * 24 * 60 * 60 * 1000
     }
   }));
