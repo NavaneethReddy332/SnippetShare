@@ -5,14 +5,12 @@ export interface SnippetCreate {
   code: string;
   language: string;
   isPrivate: boolean;
-  views: string;
 }
 
 export interface ProjectCreate {
   title: string;
   files: FileNode[];
   isPrivate: boolean;
-  views: string;
 }
 
 export interface AuthCredentials {

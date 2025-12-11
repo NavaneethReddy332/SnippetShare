@@ -59,8 +59,7 @@ export default function Home() {
         title: titleWithExt, 
         code, 
         language, 
-        isPrivate,
-        views: "0"
+        isPrivate
       });
       toast.success("Snippet Saved");
       setLocation(`/snippet/${snippet.id}`);
