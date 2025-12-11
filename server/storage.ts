@@ -46,6 +46,14 @@ export class MemStorage implements IStorage {
     this.snippets = new Map();
     this.projects = new Map();
     
+    // Create demo user for testing
+    const demoUser: User = {
+      id: "demo-user",
+      username: "demo",
+      password: "demo123"
+    };
+    this.users.set(demoUser.id, demoUser);
+    
     const demoProject: Project = {
       id: "demo-project",
       title: "React Todo App",
