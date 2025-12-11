@@ -160,7 +160,7 @@ function OverviewTab({ username }: { username: string }) {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card className="p-5">
+        <Card className="p-5 border-border/30">
           <div className="flex items-center justify-between gap-4 mb-4">
             <h3 className="text-sm font-semibold">Snippets Created</h3>
             <Badge variant="secondary" className="text-xs">{snippetPercentage.toFixed(0)}%</Badge>
@@ -179,7 +179,7 @@ function OverviewTab({ username }: { username: string }) {
           </div>
         </Card>
 
-        <Card className="p-5">
+        <Card className="p-5 border-border/30">
           <div className="flex items-center justify-between gap-4 mb-4">
             <h3 className="text-sm font-semibold">Total Views</h3>
             <Badge variant="secondary" className="text-xs">Healthy</Badge>
@@ -199,7 +199,7 @@ function OverviewTab({ username }: { username: string }) {
         </Card>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <div className="flex items-center justify-between gap-4 mb-4">
           <h3 className="text-sm font-semibold">Recent Activity</h3>
           <Badge variant="outline" className="text-xs">Live</Badge>
@@ -275,7 +275,7 @@ function AccountTab({ username }: { username: string }) {
         <p className="text-sm text-muted-foreground mt-1">Manage your account settings.</p>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <h3 className="text-sm font-semibold mb-5">Profile Information</h3>
         
         <div className="space-y-4">
@@ -304,7 +304,7 @@ function AccountTab({ username }: { username: string }) {
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <h3 className="text-sm font-semibold mb-5">Preferences</h3>
         <div className="space-y-4">
           <PreferenceRow 
@@ -352,7 +352,7 @@ function SecurityTab() {
         <p className="text-sm text-muted-foreground mt-1">Manage your security settings.</p>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <h3 className="text-sm font-semibold mb-5">Authentication</h3>
         <div className="space-y-0">
           <SecurityRow
@@ -370,7 +370,7 @@ function SecurityTab() {
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <div className="flex items-center justify-between gap-4 mb-5">
           <h3 className="text-sm font-semibold">Active Sessions</h3>
           <Badge variant="outline" className="text-xs">2 Devices</Badge>
@@ -391,7 +391,7 @@ function SecurityTab() {
         </div>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <h3 className="text-sm font-semibold mb-4">API Key</h3>
         <div 
           className="bg-background border border-dashed border-border rounded-md px-4 py-3 font-mono text-sm text-muted-foreground flex items-center justify-between cursor-pointer group transition-colors hover:border-muted-foreground hover:text-foreground"
@@ -458,7 +458,7 @@ function BillingTab() {
         <p className="text-sm text-muted-foreground mt-1">Manage your subscription and payments.</p>
       </div>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <div className="flex items-center justify-between gap-4 mb-5">
           <h3 className="text-sm font-semibold">Current Plan</h3>
           <Badge variant="secondary" className="text-xs">Active</Badge>
@@ -481,7 +481,7 @@ function BillingTab() {
         </Button>
       </Card>
 
-      <Card className="p-5">
+      <Card className="p-5 border-border/30">
         <h3 className="text-sm font-semibold mb-4">Pro Plan Benefits</h3>
         <ul className="space-y-3">
           {[
