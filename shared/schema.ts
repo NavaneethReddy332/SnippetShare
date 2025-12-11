@@ -34,6 +34,7 @@ export const snippets = sqliteTable("snippets", {
   language: text("language").notNull(),
   userId: text("user_id"),
   isPrivate: integer("is_private", { mode: "boolean" }).notNull().default(false),
+  password: text("password"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull().$defaultFn(() => new Date()),
   views: text("views").notNull().default("0"),
 });
@@ -42,6 +43,8 @@ export const insertSnippetSchema = createInsertSchema(snippets).omit({
   id: true,
   createdAt: true,
   views: true,
+}).extend({
+  password: z.string().optional(),
 });
 
 export type InsertSnippet = z.infer<typeof insertSnippetSchema>;

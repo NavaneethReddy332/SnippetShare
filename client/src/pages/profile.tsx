@@ -1,5 +1,5 @@
 import { Layout } from "@/components/layout";
-import { User, Shield, CreditCard, AlertTriangle, Loader2, PieChart, GitCommit, FileText, Monitor, Smartphone, Globe } from "lucide-react";
+import { User, Shield, CreditCard, AlertTriangle, Loader2, PieChart, MoreVertical, Eye, Share2, Trash2, Lock, Unlock, Pencil, ExternalLink, FileCode, Monitor, Smartphone, Globe } from "lucide-react";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { api, UserStats } from "@/lib/api";
@@ -8,6 +8,10 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
+import { useLocation } from "wouter";
+import type { Snippet } from "@shared/schema";
+import { formatDistanceToNow } from "date-fns";
+import { motion, AnimatePresence } from "framer-motion";
 
 type TabId = "overview" | "account" | "security" | "billing" | "danger";
 
@@ -132,14 +136,52 @@ export default function Profile() {
 
 function OverviewTab({ username }: { username: string }) {
   const [stats, setStats] = useState<UserStats | null>(null);
+  const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
+  const [_, setLocation] = useLocation();
 
   useEffect(() => {
-    api.auth.getStats()
-      .then(setStats)
-      .catch(() => toast.error("Failed to load stats"))
+    Promise.all([
+      api.auth.getStats(),
+      api.snippets.getMy()
+    ])
+      .then(([statsData, snippetsData]) => {
+        setStats(statsData);
+        setSnippets(snippetsData);
+      })
+      .catch(() => toast.error("Failed to load data"))
       .finally(() => setLoading(false));
   }, []);
+
+  const handleDelete = async (id: string) => {
+    if (confirm("Are you sure you want to delete this snippet?")) {
+      try {
+        await api.snippets.delete(id);
+        setSnippets(prev => prev.filter(s => s.id !== id));
+        toast.success("Snippet deleted");
+      } catch {
+        toast.error("Failed to delete snippet");
+      }
+    }
+    setOpenMenuId(null);
+  };
+
+  const handleShare = (id: string) => {
+    navigator.clipboard.writeText(`${window.location.origin}/snippet/${id}`);
+    toast.success("Link copied to clipboard");
+    setOpenMenuId(null);
+  };
+
+  const handleView = (id: string) => {
+    setLocation(`/snippet/${id}`);
+    setOpenMenuId(null);
+  };
+
+  const handleOpenInEditor = (snippet: Snippet) => {
+    setLocation(`/?code=${encodeURIComponent(snippet.code)}&lang=${snippet.language}&title=${encodeURIComponent(snippet.title)}`);
+    setOpenMenuId(null);
+  };
 
   if (loading) {
     return (
@@ -201,46 +243,105 @@ function OverviewTab({ username }: { username: string }) {
 
       <Card className="p-5 border-border/30">
         <div className="flex items-center justify-between gap-4 mb-4">
-          <h3 className="text-sm font-semibold">Recent Activity</h3>
-          <Badge variant="outline" className="text-xs">Live</Badge>
+          <h3 className="text-sm font-semibold">Your Files</h3>
+          <Badge variant="outline" className="text-xs">{snippets.length} files</Badge>
         </div>
         
         <div className="space-y-0">
-          <ActivityItem 
-            icon={GitCommit}
-            title="Snippet Created"
-            description="Just now"
-            status="Success"
-          />
-          <ActivityItem 
-            icon={FileText}
-            title="Account Created"
-            description="Welcome to SnippetShare"
-          />
-          <ActivityItem 
-            icon={PieChart}
-            title={`${stats?.thisMonth || 0} snippets this month`}
-            description="Monthly activity"
-          />
+          {snippets.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">
+              No snippets yet. Create your first one!
+            </div>
+          ) : (
+            snippets.map((snippet) => (
+              <div 
+                key={snippet.id}
+                className="group flex items-center justify-between py-3 border-b border-border/50 last:border-0"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="w-8 h-8 bg-muted rounded-md flex items-center justify-center flex-shrink-0">
+                    <FileCode className="w-4 h-4 text-muted-foreground" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium truncate">{snippet.title}</p>
+                      {snippet.isPrivate ? (
+                        <Lock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      ) : (
+                        <Unlock className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                      <span className="font-mono uppercase">{snippet.language}</span>
+                      <span>{formatDistanceToNow(new Date(snippet.createdAt), { addSuffix: true })}</span>
+                      <span className="flex items-center gap-1">
+                        <Eye className="w-3 h-3" />
+                        {snippet.views}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="relative">
+                  <button
+                    onClick={() => setOpenMenuId(openMenuId === snippet.id ? null : snippet.id)}
+                    className="p-2 rounded-md hover:bg-muted transition-colors"
+                    data-testid={`button-menu-${snippet.id}`}
+                  >
+                    <MoreVertical className="w-4 h-4 text-muted-foreground" />
+                  </button>
+                  
+                  <AnimatePresence>
+                    {openMenuId === snippet.id && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                        transition={{ duration: 0.15 }}
+                        className="absolute right-0 top-full mt-1 w-40 bg-card border border-border rounded-md shadow-lg z-50 overflow-hidden"
+                      >
+                        <button
+                          onClick={() => handleView(snippet.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors"
+                          data-testid={`button-view-${snippet.id}`}
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          View
+                        </button>
+                        <button
+                          onClick={() => handleOpenInEditor(snippet)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors"
+                          data-testid={`button-edit-${snippet.id}`}
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleShare(snippet.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs hover:bg-muted transition-colors"
+                          data-testid={`button-share-${snippet.id}`}
+                        >
+                          <Share2 className="w-3.5 h-3.5" />
+                          Share
+                        </button>
+                        <div className="border-t border-border my-1" />
+                        <button
+                          onClick={() => handleDelete(snippet.id)}
+                          className="w-full flex items-center gap-2 px-3 py-2 text-xs text-red-500 hover:bg-red-500/10 transition-colors"
+                          data-testid={`button-delete-${snippet.id}`}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          Delete
+                        </button>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </Card>
-    </div>
-  );
-}
-
-function ActivityItem({ icon: Icon, title, description, status }: { icon: React.ElementType; title: string; description: string; status?: string }) {
-  return (
-    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
-      <div className="flex items-center gap-4">
-        <div className="w-9 h-9 bg-muted rounded-md flex items-center justify-center">
-          <Icon className="w-4 h-4 text-muted-foreground" />
-        </div>
-        <div>
-          <p className="text-sm font-medium">{title}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
-        </div>
-      </div>
-      {status && <span className="text-xs text-muted-foreground">{status}</span>}
     </div>
   );
 }

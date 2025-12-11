@@ -5,6 +5,7 @@ export interface SnippetCreate {
   code: string;
   language: string;
   isPrivate: boolean;
+  password?: string;
 }
 
 export interface ProjectCreate {

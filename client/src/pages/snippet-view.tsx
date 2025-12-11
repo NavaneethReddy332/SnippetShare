@@ -2,8 +2,8 @@ import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { languages, getExtension } from "@/lib/language-detect";
-import { useRoute } from "wouter";
-import { Calendar, Eye, Share2, Shield, Check, Pencil, X, Copy, Download, Code2 } from "lucide-react";
+import { useRoute, useLocation } from "wouter";
+import { Calendar, Eye, Share2, Shield, Check, Pencil, X, Copy, Download, Code2, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import NotFound from "./not-found";
 import { toast } from "sonner";
@@ -13,6 +13,7 @@ import { PageTransition, FadeIn, SlideIn } from "@/components/animations";
 
 export default function SnippetView() {
   const [match, params] = useRoute("/snippet/:id");
+  const [_, setLocation] = useLocation();
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
   const [snippet, setSnippet] = useState<Snippet | null>(null);
@@ -179,6 +180,15 @@ export default function SnippetView() {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setLocation(`/?code=${encodeURIComponent(snippet.code)}&lang=${snippet.language}&title=${encodeURIComponent(snippet.title)}`)}
+                    className="h-9 px-3 rounded border border-border bg-background hover:bg-white/5 hover:border-primary/30 flex items-center gap-2 text-sm font-medium transition-all"
+                    title="Open in Editor"
+                    data-testid="button-open-in-editor"
+                  >
+                    <ExternalLink className="w-4 h-4" />
+                    <span className="hidden sm:inline">Open in Editor</span>
+                  </button>
                   <button 
                     onClick={handleCopyCode}
                     className="h-9 px-3 rounded border border-border bg-background hover:bg-white/5 hover:border-primary/30 flex items-center gap-2 text-sm font-medium transition-all"

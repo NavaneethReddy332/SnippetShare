@@ -171,7 +171,8 @@ export default function App() {
       userId: userId || null,
       createdAt: new Date(),
       views: "0",
-      isPrivate: insertSnippet.isPrivate ?? false
+      isPrivate: insertSnippet.isPrivate ?? false,
+      password: insertSnippet.password ?? null
     };
     this.snippets.set(id, snippet);
     return snippet;

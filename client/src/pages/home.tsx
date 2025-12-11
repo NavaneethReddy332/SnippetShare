@@ -3,22 +3,46 @@ import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
-import { useLocation } from "wouter";
-import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle } from "lucide-react";
+import { useLocation, useSearch } from "wouter";
+import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key } from "lucide-react";
 import { toast } from "sonner";
 import { PageTransition, FadeIn } from "@/components/animations";
+import { motion, AnimatePresence } from "framer-motion";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
+  const searchString = useSearch();
   
   const [code, setCode] = useState("");
   const [title, setTitle] = useState("");
   const [language, setLanguage] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [password, setPassword] = useState("");
   const [autoDetected, setAutoDetected] = useState(false);
   const [saving, setSaving] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const initialLoad = useRef(true);
+  
+  // Handle "Open in Editor" from shared snippets
+  useEffect(() => {
+    const params = new URLSearchParams(searchString);
+    const codeParam = params.get("code");
+    const langParam = params.get("lang");
+    const titleParam = params.get("title");
+    
+    if (codeParam) {
+      setCode(codeParam);
+      if (langParam) {
+        setLanguage(langParam);
+        setAutoDetected(false);
+      }
+      if (titleParam) {
+        setTitle(titleParam.replace(/\.[^/.]+$/, "")); // Remove extension
+      }
+      // Clear URL params after loading
+      window.history.replaceState({}, "", "/");
+    }
+  }, [searchString]);
 
   useEffect(() => {
     if (initialLoad.current) {
@@ -72,7 +96,8 @@ export default function Home() {
         title: titleWithExt, 
         code, 
         language, 
-        isPrivate
+        isPrivate,
+        password: isPrivate && password.trim() ? password.trim() : undefined
       });
       setHasUnsavedChanges(false);
       toast.success("Snippet Saved");
@@ -148,7 +173,10 @@ export default function Home() {
           </div>
 
           <button 
-            onClick={() => setIsPrivate(!isPrivate)}
+            onClick={() => {
+              setIsPrivate(!isPrivate);
+              if (isPrivate) setPassword("");
+            }}
             className={`h-7 px-3 border rounded-sm flex items-center gap-1.5 text-xs transition-all ${
               isPrivate 
                 ? 'border-primary/30 bg-primary/10 text-primary' 
@@ -159,6 +187,30 @@ export default function Home() {
             {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
             <span>{isPrivate ? "Private" : "Public"}</span>
           </button>
+
+          <AnimatePresence>
+            {isPrivate && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: "auto", opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="overflow-hidden"
+              >
+                <div className="relative">
+                  <Key className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                  <input
+                    type="password"
+                    placeholder="Password (optional)"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="h-7 w-32 pl-7 pr-2 text-xs bg-card border border-border rounded-sm focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/60"
+                    data-testid="input-password"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <button 
             onClick={handleSave}
