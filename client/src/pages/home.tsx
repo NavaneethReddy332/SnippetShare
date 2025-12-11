@@ -336,120 +336,37 @@ export default function Home() {
 
           <div className="h-4 w-px bg-border/50 mx-1"></div>
 
-          <div className="flex items-center gap-1">
-            {activeTab.hasUnsavedChanges && (
-              <span title="Unsaved changes">
-                <Circle className="w-2 h-2 fill-primary text-primary flex-shrink-0" />
-              </span>
-            )}
-            <input 
-              type="text" 
-              placeholder="title..." 
-              value={activeTab.title}
-              onChange={(e) => updateActiveTab({ title: e.target.value })}
-              className="w-24 bg-transparent px-1 py-0.5 text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium"
-              data-testid="input-title"
-            />
-          </div>
-          
-          <div className="w-28 relative">
-             <select 
-               value={activeTab.language}
-               onChange={(e) => handleLanguageChange(e.target.value)}
-               className={`w-full appearance-none bg-card border border-border rounded-sm px-2 py-1 text-xs focus:outline-none focus:border-primary/50 cursor-pointer transition-colors h-7 pl-2 pr-6 ${activeTab.language ? 'text-foreground' : 'text-muted-foreground'}`}
-               data-testid="select-language"
-             >
-               <option value="">Language</option>
-               {languages.map(lang => (
-                 <option key={lang.id} value={lang.id}>{lang.name}</option>
-               ))}
-             </select>
-             <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
-          </div>
-
-          <button 
-            onClick={() => {
-              updateActiveTab({ isPrivate: !activeTab.isPrivate });
-              if (activeTab.isPrivate) updateActiveTab({ password: "" });
-            }}
-            className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
-              activeTab.isPrivate 
-                ? 'border-primary/30 bg-primary/10 text-primary' 
-                : 'border-border bg-card text-muted-foreground hover:text-foreground'
-            }`}
-            data-testid="button-privacy"
-          >
-            {activeTab.isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-          </button>
-
-          <AnimatePresence>
-            {activeTab.isPrivate && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: "auto", opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="overflow-hidden"
-              >
-                <div className="relative">
-                  <Key className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={activeTab.password}
-                    onChange={(e) => updateActiveTab({ password: e.target.value })}
-                    className="h-7 w-24 pl-7 pr-2 text-xs bg-card border border-border rounded-sm focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/60"
-                    data-testid="input-password"
-                  />
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <button 
-            onClick={handleSave}
-            disabled={saving}
-            className="h-7 px-3 bg-primary text-primary-foreground text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="button-save"
-          >
-            {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-            Save
-          </button>
-
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
-              sidebarOpen 
-                ? 'border-primary/30 bg-primary/10 text-primary' 
-                : 'border-border bg-card text-muted-foreground hover:text-foreground'
-            }`}
-            data-testid="button-sidebar-toggle"
-          >
-            <PanelRight className="w-3 h-3" />
-          </button>
-
-          <div className="h-4 w-px bg-border/50 mx-1"></div>
-
           <div className="flex items-center">
             {tabs.map((tab) => (
               <div
                 key={tab.id}
                 onClick={() => setActiveTabId(tab.id)}
-                className={`group flex items-center gap-1 px-2 py-1 text-xs cursor-pointer transition-colors ${
+                className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer transition-colors border-b-2 ${
                   tab.id === activeTabId
-                    ? 'bg-primary/10 text-primary border-b-2 border-b-primary'
-                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+                    ? 'bg-card text-foreground border-b-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-card/50 border-b-transparent'
                 }`}
                 data-testid={`tab-${tab.id}`}
               >
                 {tab.hasUnsavedChanges && (
                   <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
                 )}
-                <FileCode className="w-3 h-3" />
-                <span className="max-w-16 truncate text-[11px]">{tab.title || "untitled"}</span>
+                <input
+                  type="text"
+                  value={tab.title || ""}
+                  placeholder="Untitled"
+                  onChange={(e) => {
+                    if (tab.id === activeTabId) {
+                      updateActiveTab({ title: e.target.value });
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  className="w-20 bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground"
+                  data-testid={`input-tab-title-${tab.id}`}
+                />
                 <button
                   onClick={(e) => closeTab(tab.id, e)}
-                  className="ml-0.5 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+                  className="p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
                   data-testid={`close-tab-${tab.id}`}
                 >
                   <X className="w-2.5 h-2.5" />
@@ -459,12 +376,92 @@ export default function Home() {
             {tabs.length < 3 && (
               <button
                 onClick={addNewTab}
-                className="p-1 text-muted-foreground hover:text-foreground transition-colors"
+                className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="button-add-tab"
               >
                 <Plus className="w-3 h-3" />
               </button>
             )}
+          </div>
+
+          <div className="flex-1" />
+
+          <div className="flex items-center gap-2">
+            <div className="w-28 relative">
+               <select 
+                 value={activeTab.language}
+                 onChange={(e) => handleLanguageChange(e.target.value)}
+                 className={`w-full appearance-none bg-card border border-border rounded-sm px-2 py-1 text-xs focus:outline-none focus:border-primary/50 cursor-pointer transition-colors h-7 pl-2 pr-6 ${activeTab.language ? 'text-foreground' : 'text-muted-foreground'}`}
+                 data-testid="select-language"
+               >
+                 <option value="">Language</option>
+                 {languages.map(lang => (
+                   <option key={lang.id} value={lang.id}>{lang.name}</option>
+                 ))}
+               </select>
+               <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
+            </div>
+
+            <button 
+              onClick={() => {
+                updateActiveTab({ isPrivate: !activeTab.isPrivate });
+                if (activeTab.isPrivate) updateActiveTab({ password: "" });
+              }}
+              className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
+                activeTab.isPrivate 
+                  ? 'border-primary/30 bg-primary/10 text-primary' 
+                  : 'border-border bg-card text-muted-foreground hover:text-foreground'
+              }`}
+              data-testid="button-privacy"
+            >
+              {activeTab.isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
+            </button>
+
+            <AnimatePresence>
+              {activeTab.isPrivate && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: "auto", opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="overflow-hidden"
+                >
+                  <div className="relative">
+                    <Key className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={activeTab.password}
+                      onChange={(e) => updateActiveTab({ password: e.target.value })}
+                      className="h-7 w-24 pl-7 pr-2 text-xs bg-card border border-border rounded-sm focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/60"
+                      data-testid="input-password"
+                    />
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <button 
+              onClick={handleSave}
+              disabled={saving}
+              className="h-7 px-3 bg-primary text-primary-foreground text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="button-save"
+            >
+              {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
+              Save
+            </button>
+
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
+                sidebarOpen 
+                  ? 'border-primary/30 bg-primary/10 text-primary' 
+                  : 'border-border bg-card text-muted-foreground hover:text-foreground'
+              }`}
+              data-testid="button-sidebar-toggle"
+            >
+              <PanelRight className="w-3 h-3" />
+            </button>
           </div>
         </div>
         </FadeIn>
