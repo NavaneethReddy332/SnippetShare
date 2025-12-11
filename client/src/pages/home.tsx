@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
@@ -6,6 +6,7 @@ import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
 import { useLocation } from "wouter";
 import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { PageTransition, FadeIn } from "@/components/animations";
 
 export default function Home() {
   const [_, setLocation] = useLocation();
@@ -76,9 +77,10 @@ export default function Home() {
 
   return (
     <Layout>
-      <div className="h-full relative flex flex-col">
+      <PageTransition className="h-full relative flex flex-col">
         
-        <div className="flex items-center gap-2 p-2 border-b border-border/50 bg-editor-bg z-10">
+        <FadeIn>
+          <div className="flex items-center gap-2 p-2 border-b border-border/50 bg-editor-bg z-10">
           
           <div className="flex bg-card border border-border rounded-sm p-0.5">
              <button 
@@ -150,6 +152,7 @@ export default function Home() {
             {saving ? "Saving..." : "Save"}
           </button>
         </div>
+        </FadeIn>
 
         <div className="flex-1 min-h-0 flex bg-editor-bg">
           <CodeEditor 
@@ -162,7 +165,7 @@ export default function Home() {
           />
         </div>
 
-      </div>
+      </PageTransition>
     </Layout>
   );
 }

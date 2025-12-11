@@ -3,27 +3,37 @@ import { Terminal, User, Plus, LayoutDashboard, AlertTriangle, X, LogIn, LogOut 
 import { useState } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { AuthModal } from "./auth-modal";
+import { motion, AnimatePresence } from "framer-motion";
 
 export function GuestWarningBanner({ onLoginClick }: { onLoginClick: () => void }) {
   const [dismissed, setDismissed] = useState(false);
   const { user } = useAuth();
   
-  if (dismissed || user) return null;
-  
   return (
-    <div className="bg-muted border-b border-border px-4 py-2 flex items-center justify-center gap-3" data-testid="guest-warning-banner">
-      <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-      <p className="text-sm text-muted-foreground font-medium">
-        Your snippets may be lost without an account. <button onClick={onLoginClick} className="underline hover:text-foreground" data-testid="link-sign-in">Sign in</button> to save your work permanently.
-      </p>
-      <button 
-        onClick={() => setDismissed(true)}
-        className="p-1 rounded hover:bg-accent transition-colors ml-2"
-        data-testid="button-dismiss-warning"
-      >
-        <X className="w-3 h-3 text-muted-foreground" />
-      </button>
-    </div>
+    <AnimatePresence>
+      {!dismissed && !user && (
+        <motion.div 
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: "auto" }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          className="bg-muted border-b border-border px-4 py-2 flex items-center justify-center gap-3" 
+          data-testid="guest-warning-banner"
+        >
+          <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          <p className="text-sm text-muted-foreground font-medium">
+            Your snippets may be lost without an account. <button onClick={onLoginClick} className="underline hover:text-foreground transition-colors" data-testid="link-sign-in">Sign in</button> to save your work permanently.
+          </p>
+          <button 
+            onClick={() => setDismissed(true)}
+            className="p-1 rounded hover:bg-accent transition-colors ml-2"
+            data-testid="button-dismiss-warning"
+          >
+            <X className="w-3 h-3 text-muted-foreground" />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 }
 

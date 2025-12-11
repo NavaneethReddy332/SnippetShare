@@ -9,6 +9,7 @@ import NotFound from "./not-found";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import type { Snippet } from "@shared/schema";
+import { PageTransition, FadeIn, SlideIn } from "@/components/animations";
 
 export default function SnippetView() {
   const [match, params] = useRoute("/snippet/:id");
@@ -91,10 +92,11 @@ export default function SnippetView() {
 
   return (
     <Layout>
-      <div className="flex-1 overflow-auto p-6 flex items-center justify-center">
+      <PageTransition className="flex-1 overflow-auto p-6 flex items-center justify-center">
         <div className="w-full max-w-3xl mx-auto space-y-6">
           
-          <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
+          <SlideIn direction="up">
+            <div className="bg-card border border-border rounded-lg overflow-hidden shadow-lg">
             <div className="p-6 border-b border-border">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="space-y-3">
@@ -214,20 +216,23 @@ export default function SnippetView() {
               </div>
             )}
 
-            <div className="p-0 max-h-96 overflow-auto">
-              <CodeEditor 
-                initialCode={snippet.code} 
-                language={snippet.language} 
-                readOnly={true} 
-                title={snippet.title}
-                className="border-none rounded-none"
-                compact={true}
-              />
-            </div>
+            <FadeIn delay={0.1}>
+              <div className="p-0 max-h-96 overflow-auto">
+                <CodeEditor 
+                  initialCode={snippet.code} 
+                  language={snippet.language} 
+                  readOnly={true} 
+                  title={snippet.title}
+                  className="border-none rounded-none"
+                  compact={true}
+                />
+              </div>
+            </FadeIn>
           </div>
+          </SlideIn>
           
         </div>
-      </div>
+      </PageTransition>
     </Layout>
   );
 }
