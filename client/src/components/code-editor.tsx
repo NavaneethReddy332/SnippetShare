@@ -155,7 +155,7 @@ export function CodeEditor({
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary selection:bg-primary/20 whitespace-pre overflow-auto placeholder:text-green-500/60"
+                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary selection:bg-orange-500/40 whitespace-pre overflow-auto placeholder:text-green-500/60"
                 style={{ tabSize: 2, lineHeight: '20px', caretColor: 'hsl(var(--primary))' }}
                 placeholder="// Start typing your code here...
 // Tip: Language will be auto-detected as you type"

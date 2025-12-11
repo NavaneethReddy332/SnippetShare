@@ -52,6 +52,7 @@ export default function Home() {
   const [findReplaceDialogOpen, setFindReplaceDialogOpen] = useState(false);
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
+  const [lastFindIndex, setLastFindIndex] = useState(-1);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initialLoad = useRef(true);
   
@@ -248,6 +249,7 @@ export default function Home() {
     setFindDialogOpen(true);
     setFindReplaceDialogOpen(false);
     setSidebarOpen(false);
+    setLastFindIndex(-1);
   };
 
   const handleFindReplace = () => {
@@ -261,14 +263,26 @@ export default function Home() {
     const textarea = document.querySelector('[data-testid="textarea-code"]') as HTMLTextAreaElement;
     if (!textarea) return;
     
-    const code = activeTab.code;
-    const index = code.toLowerCase().indexOf(findText.toLowerCase());
+    const code = activeTab.code.toLowerCase();
+    const searchText = findText.toLowerCase();
+    const startPos = lastFindIndex + 1;
+    
+    let index = code.indexOf(searchText, startPos);
+    
+    if (index === -1 && startPos > 0) {
+      index = code.indexOf(searchText, 0);
+      if (index !== -1) {
+        toast.info("Wrapped to beginning");
+      }
+    }
+    
     if (index !== -1) {
       textarea.focus();
       textarea.setSelectionRange(index, index + findText.length);
-      toast.success(`Found at position ${index}`);
+      setLastFindIndex(index);
     } else {
       toast.error("Not found");
+      setLastFindIndex(-1);
     }
   };
 
