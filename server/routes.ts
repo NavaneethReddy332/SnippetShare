@@ -150,14 +150,50 @@ export async function registerRoutes(
       if (!snippet) {
         return res.status(404).json({ error: "Snippet not found" });
       }
+      
       // Check if private and user is not the owner
       if (snippet.isPrivate && snippet.userId !== req.session.userId) {
+        // If snippet has a password, require password verification
+        if (snippet.password) {
+          return res.status(403).json({ 
+            error: "Password required", 
+            requiresPassword: true,
+            snippetId: snippet.id 
+          });
+        }
+        // Private snippet without password - only owner can view
         return res.status(403).json({ error: "Access denied" });
       }
+      
       await storage.incrementSnippetViews(req.params.id);
       res.json(snippet);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch snippet" });
+    }
+  });
+
+  // Verify password for private snippets
+  app.post("/api/snippets/:id/verify", async (req, res) => {
+    try {
+      const { password } = req.body;
+      const snippet = await storage.getSnippet(req.params.id);
+      
+      if (!snippet) {
+        return res.status(404).json({ error: "Snippet not found" });
+      }
+      
+      if (!snippet.isPrivate || !snippet.password) {
+        return res.status(400).json({ error: "Snippet is not password protected" });
+      }
+      
+      if (snippet.password !== password) {
+        return res.status(401).json({ error: "Invalid password" });
+      }
+      
+      await storage.incrementSnippetViews(req.params.id);
+      res.json(snippet);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to verify password" });
     }
   });
 

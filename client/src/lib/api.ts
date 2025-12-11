@@ -98,9 +98,29 @@ export const api = {
       return res.json();
     },
     
-    getById: async (id: string): Promise<Snippet> => {
+    getById: async (id: string): Promise<Snippet | { requiresPassword: true; snippetId: string }> => {
       const res = await fetch(`/api/snippets/${id}`);
+      if (res.status === 403) {
+        const data = await res.json();
+        if (data.requiresPassword) {
+          return { requiresPassword: true, snippetId: data.snippetId };
+        }
+        throw new Error(data.error || "Access denied");
+      }
       if (!res.ok) throw new Error("Failed to fetch snippet");
+      return res.json();
+    },
+    
+    verifyPassword: async (id: string, password: string): Promise<Snippet> => {
+      const res = await fetch(`/api/snippets/${id}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Invalid password");
+      }
       return res.json();
     },
     

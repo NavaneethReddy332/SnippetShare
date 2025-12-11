@@ -3,13 +3,16 @@ import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { languages, getExtension } from "@/lib/language-detect";
 import { useRoute, useLocation } from "wouter";
-import { Calendar, Eye, Share2, Shield, Check, Pencil, X, Copy, Download, Code2, ExternalLink } from "lucide-react";
+import { Calendar, Eye, Share2, Shield, Check, Pencil, X, Copy, Download, Code2, ExternalLink, Lock } from "lucide-react";
 import { format } from "date-fns";
 import NotFound from "./not-found";
 import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import type { Snippet } from "@shared/schema";
 import { PageTransition, FadeIn, SlideIn } from "@/components/animations";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SnippetView() {
   const [match, params] = useRoute("/snippet/:id");
@@ -20,21 +23,90 @@ export default function SnippetView() {
   const [loading, setLoading] = useState(true);
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editTitle, setEditTitle] = useState("");
+  const [requiresPassword, setRequiresPassword] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [verifying, setVerifying] = useState(false);
   
   useEffect(() => {
     if (match && params?.id) {
       api.snippets.getById(params.id)
-        .then((s) => {
-          setSnippet(s);
-          setEditTitle(s.title);
+        .then((result) => {
+          if ('requiresPassword' in result && result.requiresPassword) {
+            setRequiresPassword(true);
+            setSnippet(null);
+          } else {
+            setSnippet(result as Snippet);
+            setEditTitle((result as Snippet).title);
+          }
         })
         .catch(() => setSnippet(null))
         .finally(() => setLoading(false));
     }
   }, [match, params?.id]);
+
+  const handlePasswordSubmit = async () => {
+    if (!params?.id || !passwordInput.trim()) return;
+    
+    setVerifying(true);
+    setPasswordError("");
+    
+    try {
+      const result = await api.snippets.verifyPassword(params.id, passwordInput);
+      setSnippet(result);
+      setEditTitle(result.title);
+      setRequiresPassword(false);
+    } catch (error: any) {
+      setPasswordError(error.message || "Invalid password");
+    } finally {
+      setVerifying(false);
+    }
+  };
   
   if (!match) return <NotFound />;
   if (loading) return <Layout><div className="text-center py-20">Loading...</div></Layout>;
+  
+  if (requiresPassword) {
+    return (
+      <Layout>
+        <div className="flex-1 flex items-center justify-center p-6">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
+                <Lock className="w-6 h-6 text-muted-foreground" />
+              </div>
+              <CardTitle>Password Protected</CardTitle>
+              <p className="text-sm text-muted-foreground mt-2">
+                This snippet is private. Enter the password to view it.
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Input
+                type="password"
+                placeholder="Enter password"
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                data-testid="input-snippet-password"
+              />
+              {passwordError && (
+                <p className="text-sm text-destructive">{passwordError}</p>
+              )}
+              <Button 
+                onClick={handlePasswordSubmit} 
+                className="w-full"
+                disabled={verifying || !passwordInput.trim()}
+                data-testid="button-verify-password"
+              >
+                {verifying ? "Verifying..." : "Unlock Snippet"}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
+  
   if (!snippet) return <NotFound />;
 
   const handleShare = () => {
