@@ -164,6 +164,7 @@ export async function registerRoutes(
       const snippet = await storage.createSnippet(validatedData, userId);
       res.status(201).json(snippet);
     } catch (error: any) {
+      console.error("Snippet creation error:", error);
       if (error.name === "ZodError") {
         return res.status(400).json({ error: fromError(error).toString() });
       }
