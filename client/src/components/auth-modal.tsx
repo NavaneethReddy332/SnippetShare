@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Mail, Lock, User, Loader2 } from "lucide-react";
+import { X, Lock, User, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
 import { ModalBackdrop, AnimatePresence } from "@/components/animations";
@@ -13,9 +13,8 @@ interface AuthModalProps {
 type AuthMode = "login" | "signup";
 
 export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
-  const [mode, setMode] = useState<AuthMode>("login");
+  const [mode, setMode] = useState<AuthMode>("signup");
   const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -27,13 +26,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       return;
     }
     
-    if (mode === "signup" && !email.trim()) {
-      toast.error("Email is required");
-      return;
-    }
-    
     if (!password.trim()) {
       toast.error("Password is required");
+      return;
+    }
+
+    if (password.length < 4) {
+      toast.error("Password must be at least 4 characters");
       return;
     }
 
@@ -50,7 +49,13 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       }
       onClose();
     } catch (error: any) {
-      toast.error(error.message || "Authentication failed");
+      if (mode === "login" && error.message?.includes("Invalid")) {
+        toast.error("Wrong username or password. Try signing up if you don't have an account.");
+      } else if (error.message?.includes("already exists")) {
+        toast.error("Username already taken. Try logging in instead.");
+      } else {
+        toast.error(error.message || "Authentication failed");
+      }
     } finally {
       setLoading(false);
     }
@@ -65,15 +70,40 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
             data-testid="auth-modal"
           >
             <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h2 className="text-sm font-semibold">
-                {mode === "login" ? "Sign In" : "Sign Up"}
-              </h2>
+              <h2 className="text-sm font-semibold">Welcome</h2>
               <button
                 onClick={onClose}
                 className="p-1 rounded hover:bg-accent transition-colors"
                 data-testid="button-close-auth"
               >
                 <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="flex border-b border-border">
+              <button
+                type="button"
+                onClick={() => setMode("signup")}
+                className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                  mode === "signup" 
+                    ? "text-foreground border-b-2 border-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="tab-signup"
+              >
+                Create Account
+              </button>
+              <button
+                type="button"
+                onClick={() => setMode("login")}
+                className={`flex-1 py-2 text-xs font-medium transition-colors ${
+                  mode === "login" 
+                    ? "text-foreground border-b-2 border-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+                data-testid="tab-login"
+              >
+                Sign In
               </button>
             </div>
 
@@ -92,27 +122,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                       placeholder="Username"
                       className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded text-xs focus:outline-none focus:border-primary/50 transition-colors"
                       data-testid="input-username"
-                    />
-                  </div>
-                </div>
-
-                <div 
-                  className={`space-y-1 transition-all duration-300 ease-out overflow-hidden ${
-                    mode === "signup" ? "max-h-20 opacity-100" : "max-h-0 opacity-0"
-                  }`}
-                >
-                  <label className="block text-xs font-medium text-muted-foreground">
-                    Email
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="Email"
-                      className="w-full pl-8 pr-3 py-1.5 bg-background border border-border rounded text-xs focus:outline-none focus:border-primary/50 transition-colors"
-                      data-testid="input-email"
                     />
                   </div>
                 </div>
@@ -146,33 +155,6 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               </form>
             </div>
 
-            <div className="px-4 pb-3">
-              <div className="text-center text-xs text-muted-foreground">
-                {mode === "login" ? (
-                  <>
-                    No account?{" "}
-                    <button
-                      onClick={() => setMode("signup")}
-                      className="text-foreground hover:underline font-medium"
-                      data-testid="button-switch-signup"
-                    >
-                      Sign up
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    Have an account?{" "}
-                    <button
-                      onClick={() => setMode("login")}
-                      className="text-foreground hover:underline font-medium"
-                      data-testid="button-switch-login"
-                    >
-                      Sign in
-                    </button>
-                  </>
-                )}
-              </div>
-            </div>
           </div>
         </ModalBackdrop>
       )}
