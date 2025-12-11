@@ -10,9 +10,6 @@ import { toast } from "sonner";
 import { useState, useEffect } from "react";
 import type { Snippet } from "@shared/schema";
 import { PageTransition, FadeIn, SlideIn } from "@/components/animations";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export default function SnippetView() {
   const [match, params] = useRoute("/snippet/:id");
@@ -69,39 +66,30 @@ export default function SnippetView() {
   if (requiresPassword) {
     return (
       <Layout>
-        <div className="flex-1 flex items-center justify-center p-6">
-          <Card className="w-full max-w-md">
-            <CardHeader className="text-center">
-              <div className="mx-auto w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-4">
-                <Lock className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <CardTitle>Password Protected</CardTitle>
-              <p className="text-sm text-muted-foreground mt-2">
-                This snippet is private. Enter the password to view it.
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
+        <div className="flex-1 flex items-center justify-center p-6 bg-black">
+          <div className="w-full max-w-sm text-center space-y-8">
+            <h1 className="text-red-500 text-xl font-medium">
+              This snippet is password protected
+            </h1>
+            <div className="relative">
+              <input
                 type="password"
                 placeholder="Enter password"
                 value={passwordInput}
-                onChange={(e) => setPasswordInput(e.target.value)}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setPasswordError("");
+                }}
                 onKeyDown={(e) => e.key === 'Enter' && handlePasswordSubmit()}
+                className="w-full bg-transparent border-0 border-b border-white/30 text-white placeholder:text-white/40 py-3 px-1 text-center focus:outline-none focus:border-white/60 transition-colors"
                 data-testid="input-snippet-password"
+                autoFocus
               />
-              {passwordError && (
-                <p className="text-sm text-destructive">{passwordError}</p>
-              )}
-              <Button 
-                onClick={handlePasswordSubmit} 
-                className="w-full"
-                disabled={verifying || !passwordInput.trim()}
-                data-testid="button-verify-password"
-              >
-                {verifying ? "Verifying..." : "Unlock Snippet"}
-              </Button>
-            </CardContent>
-          </Card>
+            </div>
+            {passwordError && (
+              <p className="text-sm text-red-500">{passwordError}</p>
+            )}
+          </div>
         </div>
       </Layout>
     );
@@ -255,11 +243,11 @@ export default function SnippetView() {
                   <button 
                     onClick={() => setLocation(`/?code=${encodeURIComponent(snippet.code)}&lang=${snippet.language}&title=${encodeURIComponent(snippet.title)}`)}
                     className="h-9 px-3 rounded border border-border bg-background hover:bg-white/5 hover:border-primary/30 flex items-center gap-2 text-sm font-medium transition-all"
-                    title="Open in Editor"
+                    title="Edit"
                     data-testid="button-open-in-editor"
                   >
                     <ExternalLink className="w-4 h-4" />
-                    <span className="hidden sm:inline">Open in Editor</span>
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                   <button 
                     onClick={handleCopyCode}
