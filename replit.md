@@ -14,6 +14,9 @@ SnippetShare is a sleek, minimalistic code snippet sharing platform with a profe
 - User authentication with snippets tied to user accounts
 - Private snippets only visible to owners
 - Logged out users redirected from dashboard to home page
+- Multi-tab support with smooth open/close animations (up to 3 tabs)
+- Tab persistence via localStorage - tabs survive navigation and page refresh
+- Password-protected snippets with unlock interface
 
 ## User Preferences
 
