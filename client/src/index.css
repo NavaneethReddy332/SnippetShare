@@ -162,3 +162,14 @@ body {
 .code-font {
   font-family: var(--font-mono);
 }
+
+/* Find highlight - orange selection */
+.find-highlight::selection {
+  background-color: rgb(249 115 22 / 0.5);
+  color: white;
+}
+
+.find-highlight::-moz-selection {
+  background-color: rgb(249 115 22 / 0.5);
+  color: white;
+}

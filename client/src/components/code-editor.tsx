@@ -71,6 +71,20 @@ export function CodeEditor({
     }
   }, []);
 
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'h')) {
+      e.preventDefault();
+      e.stopPropagation();
+      const event = new KeyboardEvent('keydown', {
+        key: e.key,
+        ctrlKey: e.ctrlKey,
+        metaKey: e.metaKey,
+        bubbles: true
+      });
+      window.dispatchEvent(event);
+    }
+  }, []);
+
   const lineNumbers = code.split('\n').map((_, i) => i + 1);
 
   return (
@@ -121,7 +135,7 @@ export function CodeEditor({
                 {({ className: highlightClass, style, tokens, getLineProps, getTokenProps }) => (
                   <pre
                     ref={preRef}
-                    className={`${highlightClass} absolute inset-0 p-2 font-mono text-xs overflow-auto pointer-events-none`}
+                    className={`${highlightClass} absolute inset-0 p-2 font-mono text-xs overflow-hidden pointer-events-none`}
                     style={{
                       ...style,
                       backgroundColor: 'transparent',
@@ -151,11 +165,12 @@ export function CodeEditor({
                 onChange={handleChange}
                 onPaste={handlePaste}
                 onScroll={handleScroll}
+                onKeyDown={handleKeyDown}
                 spellCheck={false}
                 autoComplete="off"
                 autoCorrect="off"
                 autoCapitalize="off"
-                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary selection:bg-orange-500/40 whitespace-pre overflow-auto placeholder:text-green-500/60"
+                className="absolute inset-0 p-2 bg-transparent text-transparent outline-none resize-none font-mono text-xs caret-primary whitespace-pre overflow-auto placeholder:text-green-500/60 find-highlight"
                 style={{ tabSize: 2, lineHeight: '20px', caretColor: 'hsl(var(--primary))' }}
                 placeholder="// Start typing your code here...
 // Tip: Language will be auto-detected as you type"
