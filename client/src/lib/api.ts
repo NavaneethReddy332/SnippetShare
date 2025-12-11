@@ -87,8 +87,14 @@ export const api = {
   },
 
   snippets: {
-    getAll: async (): Promise<Snippet[]> => {
-      const res = await fetch("/api/snippets");
+    getPublic: async (): Promise<Snippet[]> => {
+      const res = await fetch("/api/snippets/public");
+      if (!res.ok) throw new Error("Failed to fetch snippets");
+      return res.json();
+    },
+
+    getMy: async (): Promise<Snippet[]> => {
+      const res = await fetch("/api/snippets/my");
       if (!res.ok) throw new Error("Failed to fetch snippets");
       return res.json();
     },
@@ -128,8 +134,14 @@ export const api = {
   },
   
   projects: {
-    getAll: async (): Promise<Project[]> => {
-      const res = await fetch("/api/projects");
+    getPublic: async (): Promise<Project[]> => {
+      const res = await fetch("/api/projects/public");
+      if (!res.ok) throw new Error("Failed to fetch projects");
+      return res.json();
+    },
+
+    getMy: async (): Promise<Project[]> => {
+      const res = await fetch("/api/projects/my");
       if (!res.ok) throw new Error("Failed to fetch projects");
       return res.json();
     },

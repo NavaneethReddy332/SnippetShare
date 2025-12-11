@@ -1,22 +1,32 @@
 import { Layout } from "@/components/layout";
 import { api } from "@/lib/api";
 import { useState, useEffect } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Trash2, Eye, Lock, Globe, Calendar, FileCode } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 import type { Snippet } from "@shared/schema";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Dashboard() {
   const [snippets, setSnippets] = useState<Snippet[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user, isLoading: authLoading } = useAuth();
+  const [_, setLocation] = useLocation();
 
   useEffect(() => {
-    api.snippets.getAll()
+    if (authLoading) return;
+    
+    if (!user) {
+      setLocation("/");
+      return;
+    }
+
+    api.snippets.getMy()
       .then(setSnippets)
       .catch(() => toast.error("Failed to load snippets"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [user, authLoading, setLocation]);
 
   const handleDelete = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();

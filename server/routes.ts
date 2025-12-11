@@ -117,10 +117,23 @@ export async function registerRoutes(
     }
   });
 
-  // Snippet Routes
-  app.get("/api/snippets", async (req, res) => {
+  // Snippet Routes - Public snippets (for non-authenticated users)
+  app.get("/api/snippets/public", async (req, res) => {
     try {
-      const snippets = await storage.getSnippets();
+      const snippets = await storage.getPublicSnippets();
+      res.json(snippets);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch snippets" });
+    }
+  });
+
+  // User's own snippets (requires auth)
+  app.get("/api/snippets/my", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const snippets = await storage.getSnippets(req.session.userId);
       res.json(snippets);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch snippets" });
@@ -133,6 +146,10 @@ export async function registerRoutes(
       if (!snippet) {
         return res.status(404).json({ error: "Snippet not found" });
       }
+      // Check if private and user is not the owner
+      if (snippet.isPrivate && snippet.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
       await storage.incrementSnippetViews(req.params.id);
       res.json(snippet);
     } catch (error) {
@@ -143,7 +160,8 @@ export async function registerRoutes(
   app.post("/api/snippets", async (req, res) => {
     try {
       const validatedData = insertSnippetSchema.parse(req.body);
-      const snippet = await storage.createSnippet(validatedData);
+      const userId = req.session.userId || undefined;
+      const snippet = await storage.createSnippet(validatedData, userId);
       res.status(201).json(snippet);
     } catch (error: any) {
       if (error.name === "ZodError") {
@@ -159,11 +177,16 @@ export async function registerRoutes(
       if (!title || typeof title !== 'string') {
         return res.status(400).json({ error: "Title is required" });
       }
-      const snippet = await storage.updateSnippetTitle(req.params.id, title);
+      // Check ownership
+      const snippet = await storage.getSnippet(req.params.id);
       if (!snippet) {
         return res.status(404).json({ error: "Snippet not found" });
       }
-      res.json(snippet);
+      if (snippet.userId && snippet.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      const updated = await storage.updateSnippetTitle(req.params.id, title);
+      res.json(updated);
     } catch (error) {
       res.status(500).json({ error: "Failed to update snippet" });
     }
@@ -171,17 +194,37 @@ export async function registerRoutes(
 
   app.delete("/api/snippets/:id", async (req, res) => {
     try {
-      await storage.deleteSnippet(req.params.id);
+      const snippet = await storage.getSnippet(req.params.id);
+      if (!snippet) {
+        return res.status(404).json({ error: "Snippet not found" });
+      }
+      if (snippet.userId && snippet.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      await storage.deleteSnippet(req.params.id, req.session.userId);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete snippet" });
     }
   });
 
-  // Project Routes
-  app.get("/api/projects", async (req, res) => {
+  // Project Routes - Public projects
+  app.get("/api/projects/public", async (req, res) => {
     try {
-      const projects = await storage.getProjects();
+      const projects = await storage.getPublicProjects();
+      res.json(projects);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to fetch projects" });
+    }
+  });
+
+  // User's own projects (requires auth)
+  app.get("/api/projects/my", async (req, res) => {
+    if (!req.session.userId) {
+      return res.status(401).json({ error: "Not authenticated" });
+    }
+    try {
+      const projects = await storage.getProjects(req.session.userId);
       res.json(projects);
     } catch (error) {
       res.status(500).json({ error: "Failed to fetch projects" });
@@ -194,6 +237,10 @@ export async function registerRoutes(
       if (!project) {
         return res.status(404).json({ error: "Project not found" });
       }
+      // Check if private and user is not the owner
+      if (project.isPrivate && project.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Access denied" });
+      }
       await storage.incrementProjectViews(req.params.id);
       res.json(project);
     } catch (error) {
@@ -204,7 +251,8 @@ export async function registerRoutes(
   app.post("/api/projects", async (req, res) => {
     try {
       const validatedData = insertProjectSchema.parse(req.body);
-      const project = await storage.createProject(validatedData);
+      const userId = req.session.userId || undefined;
+      const project = await storage.createProject(validatedData, userId);
       res.status(201).json(project);
     } catch (error: any) {
       if (error.name === "ZodError") {
@@ -216,7 +264,14 @@ export async function registerRoutes(
 
   app.delete("/api/projects/:id", async (req, res) => {
     try {
-      await storage.deleteProject(req.params.id);
+      const project = await storage.getProject(req.params.id);
+      if (!project) {
+        return res.status(404).json({ error: "Project not found" });
+      }
+      if (project.userId && project.userId !== req.session.userId) {
+        return res.status(403).json({ error: "Not authorized" });
+      }
+      await storage.deleteProject(req.params.id, req.session.userId);
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to delete project" });
