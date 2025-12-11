@@ -49,6 +49,7 @@ export class MemStorage implements IStorage {
     const demoProject: Project = {
       id: "demo-project",
       title: "React Todo App",
+      userId: null,
       createdAt: new Date(),
       isPrivate: false,
       views: "10",
