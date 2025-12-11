@@ -81,25 +81,25 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
       {isOpen && (
         <ModalBackdrop onClose={onClose}>
           <div 
-            className="bg-[#0a0a0a] border border-[#222] rounded-lg shadow-2xl w-full max-w-sm overflow-hidden"
+            className="bg-[#0a0a0a] border border-[#222] rounded-lg shadow-2xl w-full max-w-xs overflow-hidden"
             data-testid="auth-modal"
           >
-            <div className="flex items-center justify-end p-4">
+            <div className="flex items-center justify-end p-2">
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-md hover:bg-[#222] transition-colors text-[#666] hover:text-white"
+                className="p-1 rounded-md hover:bg-[#222] transition-colors text-[#666] hover:text-white"
                 data-testid="button-close-auth"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="px-8 pb-8">
-              <div className="flex gap-8 mb-8">
+            <div className="px-5 pb-5">
+              <div className="flex gap-6 mb-5">
                 <button
                   type="button"
                   onClick={() => setMode("login")}
-                  className={`text-sm font-semibold uppercase tracking-wider pb-2 transition-all ${
+                  className={`text-xs font-semibold uppercase tracking-wider pb-1.5 transition-all ${
                     mode === "login" 
                       ? "text-white border-b-2 border-white" 
                       : "text-[#555] hover:text-[#888]"
@@ -111,7 +111,7 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
-                  className={`text-sm font-semibold uppercase tracking-wider pb-2 transition-all ${
+                  className={`text-xs font-semibold uppercase tracking-wider pb-1.5 transition-all ${
                     mode === "signup" 
                       ? "text-white border-b-2 border-white" 
                       : "text-[#555] hover:text-[#888]"
@@ -125,43 +125,43 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
               <button
                 type="button"
                 onClick={handleGoogleClick}
-                className="w-full flex items-center justify-center gap-3 py-3.5 bg-transparent border border-[#333] rounded-md text-sm font-medium text-[#555] cursor-not-allowed transition-colors mb-6"
+                className="w-full flex items-center justify-center gap-2 py-2.5 bg-transparent border border-[#333] rounded-md text-xs font-medium text-[#555] cursor-not-allowed transition-colors mb-4"
                 disabled
                 data-testid="button-google-auth"
               >
-                <GoogleIcon className="w-5 h-5" />
+                <GoogleIcon className="w-4 h-4" />
                 <span>CONTINUE WITH GOOGLE</span>
               </button>
 
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-3 mb-4">
                 <div className="flex-1 h-px bg-[#222]" />
-                <span className="text-xs text-[#444] uppercase">Or</span>
+                <span className="text-[10px] text-[#444] uppercase">Or</span>
                 <div className="flex-1 h-px bg-[#222]" />
               </div>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-3">
                 <div>
-                  <label className="block text-sm text-[#666] mb-2">
+                  <label className="block text-xs text-[#666] mb-1.5">
                     Username
                   </label>
                   <input
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-0 py-2 bg-transparent border-0 border-b border-[#333] text-white text-sm focus:outline-none focus:border-[#666] transition-colors placeholder:text-[#444]"
+                    className="w-full px-0 py-1.5 bg-transparent border-0 border-b border-[#333] text-white text-sm focus:outline-none focus:border-[#666] transition-colors placeholder:text-[#444]"
                     data-testid="input-username"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm text-[#666] mb-2">
+                  <label className="block text-xs text-[#666] mb-1.5">
                     Password
                   </label>
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-0 py-2 bg-transparent border-0 border-b border-[#333] text-white text-sm focus:outline-none focus:border-[#666] transition-colors placeholder:text-[#444]"
+                    className="w-full px-0 py-1.5 bg-transparent border-0 border-b border-[#333] text-white text-sm focus:outline-none focus:border-[#666] transition-colors placeholder:text-[#444]"
                     data-testid="input-password"
                   />
                 </div>
@@ -169,17 +169,17 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 bg-white text-black text-sm font-semibold uppercase tracking-wider rounded-md hover:bg-[#e5e5e5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-8"
+                  className="w-full py-2.5 bg-white text-black text-xs font-semibold uppercase tracking-wider rounded-md hover:bg-[#e5e5e5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
                   data-testid="button-submit-auth"
                 >
-                  {loading && <Loader2 className="w-4 h-4 animate-spin" />}
+                  {loading && <Loader2 className="w-3 h-3 animate-spin" />}
                   {mode === "login" ? "Login" : "Sign Up"}
                 </button>
 
                 {mode === "login" && (
                   <button
                     type="button"
-                    className="w-full text-center text-xs text-[#555] hover:text-[#888] transition-colors mt-4"
+                    className="w-full text-center text-[10px] text-[#555] hover:text-[#888] transition-colors mt-2"
                     onClick={() => toast.info("Password reset coming soon")}
                     data-testid="button-forgot-password"
                   >
