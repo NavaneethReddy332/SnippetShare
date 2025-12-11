@@ -20,17 +20,19 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   
-  getSnippets(): Promise<Snippet[]>;
+  getSnippets(userId?: string): Promise<Snippet[]>;
+  getPublicSnippets(): Promise<Snippet[]>;
   getSnippet(id: string): Promise<Snippet | undefined>;
-  createSnippet(snippet: InsertSnippet): Promise<Snippet>;
+  createSnippet(snippet: InsertSnippet, userId?: string): Promise<Snippet>;
   updateSnippetTitle(id: string, title: string): Promise<Snippet | undefined>;
-  deleteSnippet(id: string): Promise<void>;
+  deleteSnippet(id: string, userId?: string): Promise<void>;
   incrementSnippetViews(id: string): Promise<void>;
   
-  getProjects(): Promise<Project[]>;
+  getProjects(userId?: string): Promise<Project[]>;
+  getPublicProjects(): Promise<Project[]>;
   getProject(id: string): Promise<Project | undefined>;
-  createProject(project: InsertProject): Promise<Project>;
-  deleteProject(id: string): Promise<void>;
+  createProject(project: InsertProject, userId?: string): Promise<Project>;
+  deleteProject(id: string, userId?: string): Promise<void>;
   incrementProjectViews(id: string): Promise<void>;
 }
 
@@ -144,19 +146,28 @@ export default function App() {
     return user;
   }
 
-  async getSnippets(): Promise<Snippet[]> {
-    return Array.from(this.snippets.values());
+  async getSnippets(userId?: string): Promise<Snippet[]> {
+    const all = Array.from(this.snippets.values());
+    if (userId) {
+      return all.filter(s => s.userId === userId);
+    }
+    return all;
+  }
+
+  async getPublicSnippets(): Promise<Snippet[]> {
+    return Array.from(this.snippets.values()).filter(s => !s.isPrivate);
   }
 
   async getSnippet(id: string): Promise<Snippet | undefined> {
     return this.snippets.get(id);
   }
 
-  async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
+  async createSnippet(insertSnippet: InsertSnippet, userId?: string): Promise<Snippet> {
     const id = nanoid();
     const snippet: Snippet = {
       ...insertSnippet,
       id,
+      userId: userId || null,
       createdAt: new Date(),
       views: "0",
       isPrivate: insertSnippet.isPrivate ?? false
@@ -175,8 +186,11 @@ export default function App() {
     return undefined;
   }
 
-  async deleteSnippet(id: string): Promise<void> {
-    this.snippets.delete(id);
+  async deleteSnippet(id: string, userId?: string): Promise<void> {
+    const snippet = this.snippets.get(id);
+    if (snippet && (!userId || snippet.userId === userId)) {
+      this.snippets.delete(id);
+    }
   }
 
   async incrementSnippetViews(id: string): Promise<void> {
@@ -187,19 +201,28 @@ export default function App() {
     }
   }
 
-  async getProjects(): Promise<Project[]> {
-    return Array.from(this.projects.values());
+  async getProjects(userId?: string): Promise<Project[]> {
+    const all = Array.from(this.projects.values());
+    if (userId) {
+      return all.filter(p => p.userId === userId);
+    }
+    return all;
+  }
+
+  async getPublicProjects(): Promise<Project[]> {
+    return Array.from(this.projects.values()).filter(p => !p.isPrivate);
   }
 
   async getProject(id: string): Promise<Project | undefined> {
     return this.projects.get(id);
   }
 
-  async createProject(insertProject: InsertProject): Promise<Project> {
+  async createProject(insertProject: InsertProject, userId?: string): Promise<Project> {
     const id = nanoid();
     const project: Project = {
       ...insertProject,
       id,
+      userId: userId || null,
       createdAt: new Date(),
       views: "0",
       isPrivate: insertProject.isPrivate ?? false
@@ -208,8 +231,11 @@ export default function App() {
     return project;
   }
 
-  async deleteProject(id: string): Promise<void> {
-    this.projects.delete(id);
+  async deleteProject(id: string, userId?: string): Promise<void> {
+    const project = this.projects.get(id);
+    if (project && (!userId || project.userId === userId)) {
+      this.projects.delete(id);
+    }
   }
 
   async incrementProjectViews(id: string): Promise<void> {
@@ -251,8 +277,15 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async getSnippets(): Promise<Snippet[]> {
+  async getSnippets(userId?: string): Promise<Snippet[]> {
+    if (userId) {
+      return await this.db.select().from(snippets).where(eq(snippets.userId, userId));
+    }
     return await this.db.select().from(snippets);
+  }
+
+  async getPublicSnippets(): Promise<Snippet[]> {
+    return await this.db.select().from(snippets).where(eq(snippets.isPrivate, false));
   }
 
   async getSnippet(id: string): Promise<Snippet | undefined> {
@@ -260,9 +293,9 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async createSnippet(insertSnippet: InsertSnippet): Promise<Snippet> {
+  async createSnippet(insertSnippet: InsertSnippet, userId?: string): Promise<Snippet> {
     const id = nanoid();
-    const result = await this.db.insert(snippets).values({ ...insertSnippet, id }).returning();
+    const result = await this.db.insert(snippets).values({ ...insertSnippet, id, userId: userId || null }).returning();
     return result[0];
   }
 
@@ -271,8 +304,15 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async deleteSnippet(id: string): Promise<void> {
-    await this.db.delete(snippets).where(eq(snippets.id, id));
+  async deleteSnippet(id: string, userId?: string): Promise<void> {
+    if (userId) {
+      const snippet = await this.getSnippet(id);
+      if (snippet && snippet.userId === userId) {
+        await this.db.delete(snippets).where(eq(snippets.id, id));
+      }
+    } else {
+      await this.db.delete(snippets).where(eq(snippets.id, id));
+    }
   }
 
   async incrementSnippetViews(id: string): Promise<void> {
@@ -281,8 +321,15 @@ export class DbStorage implements IStorage {
     }).where(eq(snippets.id, id));
   }
 
-  async getProjects(): Promise<Project[]> {
+  async getProjects(userId?: string): Promise<Project[]> {
+    if (userId) {
+      return await this.db.select().from(projects).where(eq(projects.userId, userId));
+    }
     return await this.db.select().from(projects);
+  }
+
+  async getPublicProjects(): Promise<Project[]> {
+    return await this.db.select().from(projects).where(eq(projects.isPrivate, false));
   }
 
   async getProject(id: string): Promise<Project | undefined> {
@@ -290,14 +337,21 @@ export class DbStorage implements IStorage {
     return result[0];
   }
 
-  async createProject(insertProject: InsertProject): Promise<Project> {
+  async createProject(insertProject: InsertProject, userId?: string): Promise<Project> {
     const id = nanoid();
-    const result = await this.db.insert(projects).values({ ...insertProject, id }).returning();
+    const result = await this.db.insert(projects).values({ ...insertProject, id, userId: userId || null }).returning();
     return result[0];
   }
 
-  async deleteProject(id: string): Promise<void> {
-    await this.db.delete(projects).where(eq(projects.id, id));
+  async deleteProject(id: string, userId?: string): Promise<void> {
+    if (userId) {
+      const project = await this.getProject(id);
+      if (project && project.userId === userId) {
+        await this.db.delete(projects).where(eq(projects.id, id));
+      }
+    } else {
+      await this.db.delete(projects).where(eq(projects.id, id));
+    }
   }
 
   async incrementProjectViews(id: string): Promise<void> {
