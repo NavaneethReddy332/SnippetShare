@@ -64,7 +64,7 @@ export default function Profile() {
   return (
     <Layout>
       <div className="flex-1 flex overflow-hidden">
-        <aside className="w-56 border-r border-border flex flex-col bg-sidebar-bg/50 backdrop-blur-sm">
+        <aside className="w-56 border-r border-border/50 flex flex-col bg-sidebar-bg/50 backdrop-blur-sm">
           <nav 
             ref={navContainerRef}
             className="relative flex-1 p-3 space-y-1"
@@ -99,9 +99,9 @@ export default function Profile() {
             ))}
           </nav>
           
-          <div className="p-3 border-t border-border">
+          <div className="p-3 border-t border-border/50">
             <div className="flex items-center gap-3 px-2 py-2">
-              <div className="w-8 h-8 rounded-full border border-border bg-muted flex items-center justify-center overflow-hidden">
+              <div className="w-8 h-8 rounded-full border border-border/50 bg-muted flex items-center justify-center overflow-hidden">
                 <img 
                   src={`https://api.dicebear.com/7.x/micah/svg?seed=${user.username}`} 
                   alt={user.username}
@@ -230,7 +230,7 @@ function OverviewTab({ username }: { username: string }) {
 
 function ActivityItem({ icon: Icon, title, description, status }: { icon: React.ElementType; title: string; description: string; status?: string }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
       <div className="flex items-center gap-4">
         <div className="w-9 h-9 bg-muted rounded-md flex items-center justify-center">
           <Icon className="w-4 h-4 text-muted-foreground" />
@@ -411,7 +411,7 @@ function SecurityTab() {
 
 function SecurityRow({ title, description, action, onClick }: { title: string; description: string; action: string; onClick: () => void }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
       <div>
         <p className="text-sm font-medium">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
@@ -430,7 +430,7 @@ function SecurityRow({ title, description, action, onClick }: { title: string; d
 
 function SessionItem({ icon: Icon, device, location, isActive }: { icon: React.ElementType; device: string; location: string; isActive?: boolean }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
       <div className="flex items-center gap-4">
         <div className="w-9 h-9 bg-muted rounded-md flex items-center justify-center">
           <Icon className="w-4 h-4 text-muted-foreground" />
@@ -550,7 +550,7 @@ function DangerTab() {
 
 function DangerRow({ title, description, buttonText, onClick }: { title: string; description: string; buttonText: string; onClick: () => void }) {
   return (
-    <div className="flex items-center justify-between py-4 border-b border-border last:border-0">
+    <div className="flex items-center justify-between py-4 border-b border-border/50 last:border-0">
       <div>
         <p className="text-sm font-medium">{title}</p>
         <p className="text-xs text-muted-foreground mt-0.5">{description}</p>
