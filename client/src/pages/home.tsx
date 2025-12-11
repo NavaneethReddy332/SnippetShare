@@ -4,26 +4,65 @@ import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
 import { useLocation, useSearch } from "wouter";
-import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key } from "lucide-react";
+import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key, X, PanelRight, FolderOpen, ExternalLink, Search, Replace } from "lucide-react";
 import { toast } from "sonner";
 import { PageTransition, FadeIn } from "@/components/animations";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+
+interface TabData {
+  id: string;
+  code: string;
+  title: string;
+  language: string;
+  isPrivate: boolean;
+  password: string;
+  autoDetected: boolean;
+  hasUnsavedChanges: boolean;
+}
+
+const createNewTab = (): TabData => ({
+  id: crypto.randomUUID(),
+  code: "",
+  title: "",
+  language: "",
+  isPrivate: false,
+  password: "",
+  autoDetected: false,
+  hasUnsavedChanges: false,
+});
 
 export default function Home() {
   const [_, setLocation] = useLocation();
   const searchString = useSearch();
   
-  const [code, setCode] = useState("");
-  const [title, setTitle] = useState("");
-  const [language, setLanguage] = useState("");
-  const [isPrivate, setIsPrivate] = useState(false);
-  const [password, setPassword] = useState("");
-  const [autoDetected, setAutoDetected] = useState(false);
+  const [tabs, setTabs] = useState<TabData[]>([createNewTab()]);
+  const [activeTabId, setActiveTabId] = useState(tabs[0].id);
   const [saving, setSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [findDialogOpen, setFindDialogOpen] = useState(false);
+  const [findReplaceDialogOpen, setFindReplaceDialogOpen] = useState(false);
+  const [findText, setFindText] = useState("");
+  const [replaceText, setReplaceText] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const initialLoad = useRef(true);
   
-  // Handle "Open in Editor" from shared snippets
+  const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
+  
+  const updateActiveTab = (updates: Partial<TabData>) => {
+    setTabs(prev => prev.map(tab => 
+      tab.id === activeTabId ? { ...tab, ...updates } : tab
+    ));
+  };
+
   useEffect(() => {
     const params = new URLSearchParams(searchString);
     const codeParam = params.get("code");
@@ -31,15 +70,12 @@ export default function Home() {
     const titleParam = params.get("title");
     
     if (codeParam) {
-      setCode(codeParam);
-      if (langParam) {
-        setLanguage(langParam);
-        setAutoDetected(false);
-      }
-      if (titleParam) {
-        setTitle(titleParam.replace(/\.[^/.]+$/, "")); // Remove extension
-      }
-      // Clear URL params after loading
+      updateActiveTab({
+        code: codeParam,
+        language: langParam || "",
+        autoDetected: !langParam,
+        title: titleParam ? titleParam.replace(/\.[^/.]+$/, "") : "",
+      });
       window.history.replaceState({}, "", "/");
     }
   }, [searchString]);
@@ -49,26 +85,30 @@ export default function Home() {
       initialLoad.current = false;
       return;
     }
-    if (code.trim() || title.trim()) {
-      setHasUnsavedChanges(true);
+    if (activeTab.code.trim() || activeTab.title.trim()) {
+      updateActiveTab({ hasUnsavedChanges: true });
     }
-  }, [code, title]);
+  }, [activeTab.code, activeTab.title]);
 
   const handleCodeChange = useCallback((newCode: string) => {
-    setCode(newCode);
+    const tab = tabs.find(t => t.id === activeTabId);
+    if (!tab) return;
     
-    if (!language || autoDetected) {
+    let updates: Partial<TabData> = { code: newCode, hasUnsavedChanges: true };
+    
+    if (!tab.language || tab.autoDetected) {
       const detected = detectLanguage(newCode);
       if (detected) {
-        setLanguage(detected);
-        setAutoDetected(true);
+        updates.language = detected;
+        updates.autoDetected = true;
       }
     }
-  }, [language, autoDetected]);
+    
+    updateActiveTab(updates);
+  }, [activeTabId, tabs]);
 
   const handleLanguageChange = (newLang: string) => {
-    setLanguage(newLang);
-    setAutoDetected(false);
+    updateActiveTab({ language: newLang, autoDetected: false });
   };
 
   const handleProjectClick = () => {
@@ -76,30 +116,30 @@ export default function Home() {
   };
 
   const handleSave = async () => {
-    if (!code.trim()) {
+    if (!activeTab.code.trim()) {
       toast.error("Enter some code first");
       return;
     }
     
-    if (!language) {
+    if (!activeTab.language) {
       toast.error("Please select a language");
       return;
     }
     
-    const ext = getExtension(language);
-    const finalTitle = title.trim() || "untitled";
+    const ext = getExtension(activeTab.language);
+    const finalTitle = activeTab.title.trim() || "untitled";
     const titleWithExt = finalTitle.endsWith(ext) ? finalTitle : `${finalTitle}${ext}`;
     
     setSaving(true);
     try {
       const snippet = await api.snippets.create({ 
         title: titleWithExt, 
-        code, 
-        language, 
-        isPrivate,
-        password: isPrivate && password.trim() ? password.trim() : undefined
+        code: activeTab.code, 
+        language: activeTab.language, 
+        isPrivate: activeTab.isPrivate,
+        password: activeTab.isPrivate && activeTab.password.trim() ? activeTab.password.trim() : undefined
       });
-      setHasUnsavedChanges(false);
+      updateActiveTab({ hasUnsavedChanges: false });
       toast.success("Snippet Saved");
       setLocation(`/snippet/${snippet.id}`);
     } catch (error) {
@@ -109,13 +149,171 @@ export default function Home() {
     }
   };
 
-  const displayLanguage = language 
-    ? languages.find(l => l.id === language)?.name || language 
+  const addNewTab = () => {
+    if (tabs.length >= 3) {
+      toast.error("Maximum 3 tabs allowed");
+      return;
+    }
+    const newTab = createNewTab();
+    setTabs(prev => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+  };
+
+  const closeTab = (tabId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (tabs.length === 1) {
+      const newTab = createNewTab();
+      setTabs([newTab]);
+      setActiveTabId(newTab.id);
+      return;
+    }
+    
+    const tabIndex = tabs.findIndex(t => t.id === tabId);
+    const newTabs = tabs.filter(t => t.id !== tabId);
+    setTabs(newTabs);
+    
+    if (activeTabId === tabId) {
+      const newActiveIndex = Math.min(tabIndex, newTabs.length - 1);
+      setActiveTabId(newTabs[newActiveIndex].id);
+    }
+  };
+
+  const handleOpenFile = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      const ext = file.name.split('.').pop()?.toLowerCase() || "";
+      
+      const langMap: Record<string, string> = {
+        'js': 'javascript',
+        'jsx': 'jsx',
+        'ts': 'typescript',
+        'tsx': 'tsx',
+        'py': 'python',
+        'rb': 'ruby',
+        'go': 'go',
+        'rs': 'rust',
+        'java': 'java',
+        'cpp': 'cpp',
+        'c': 'c',
+        'cs': 'csharp',
+        'php': 'php',
+        'html': 'html',
+        'css': 'css',
+        'json': 'json',
+        'md': 'markdown',
+        'sql': 'sql',
+        'sh': 'bash',
+        'yml': 'yaml',
+        'yaml': 'yaml',
+      };
+      
+      const detectedLang = langMap[ext] || detectLanguage(content) || "";
+      
+      if (tabs.length < 3) {
+        const newTab = createNewTab();
+        newTab.code = content;
+        newTab.title = fileName;
+        newTab.language = detectedLang;
+        newTab.autoDetected = !langMap[ext];
+        setTabs(prev => [...prev, newTab]);
+        setActiveTabId(newTab.id);
+      } else {
+        updateActiveTab({
+          code: content,
+          title: fileName,
+          language: detectedLang,
+          autoDetected: !langMap[ext],
+          hasUnsavedChanges: true,
+        });
+      }
+    };
+    reader.readAsText(file);
+    e.target.value = "";
+  };
+
+  const handleNewWindow = () => {
+    window.open(window.location.origin, '_blank');
+  };
+
+  const handleFind = () => {
+    setFindDialogOpen(true);
+    setFindReplaceDialogOpen(false);
+    setSidebarOpen(false);
+  };
+
+  const handleFindReplace = () => {
+    setFindReplaceDialogOpen(true);
+    setFindDialogOpen(false);
+    setSidebarOpen(false);
+  };
+
+  const performFind = () => {
+    if (!findText) return;
+    const textarea = document.querySelector('[data-testid="textarea-code"]') as HTMLTextAreaElement;
+    if (!textarea) return;
+    
+    const code = activeTab.code;
+    const index = code.toLowerCase().indexOf(findText.toLowerCase());
+    if (index !== -1) {
+      textarea.focus();
+      textarea.setSelectionRange(index, index + findText.length);
+      toast.success(`Found at position ${index}`);
+    } else {
+      toast.error("Not found");
+    }
+  };
+
+  const performReplace = () => {
+    if (!findText) return;
+    const newCode = activeTab.code.replace(new RegExp(findText, 'gi'), replaceText);
+    updateActiveTab({ code: newCode, hasUnsavedChanges: true });
+    toast.success("Replaced all occurrences");
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
+        e.preventDefault();
+        handleNewWindow();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'f') {
+        e.preventDefault();
+        handleFind();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+        e.preventDefault();
+        handleFindReplace();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const displayLanguage = activeTab.language 
+    ? languages.find(l => l.id === activeTab.language)?.name || activeTab.language 
     : "Select Language";
 
   return (
     <Layout>
       <PageTransition className="h-full relative flex flex-col">
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          accept=".js,.jsx,.ts,.tsx,.py,.rb,.go,.rs,.java,.cpp,.c,.cs,.php,.html,.css,.json,.md,.sql,.sh,.yml,.yaml,.txt"
+          onChange={handleFileChange}
+          data-testid="input-file"
+        />
         
         <FadeIn>
           <div className="flex items-center gap-2 p-2 border-b border-border/50 bg-editor-bg z-10">
@@ -138,58 +336,54 @@ export default function Home() {
 
           <div className="h-4 w-px bg-border/50 mx-1"></div>
 
-          <div className="flex-1 flex items-center gap-2">
-            {hasUnsavedChanges && (
+          <div className="flex items-center gap-1">
+            {activeTab.hasUnsavedChanges && (
               <span title="Unsaved changes">
                 <Circle className="w-2 h-2 fill-primary text-primary flex-shrink-0" />
               </span>
             )}
             <input 
               type="text" 
-              placeholder="Enter snippet title..." 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full bg-transparent px-2 py-1 text-sm text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium h-7"
+              placeholder="title..." 
+              value={activeTab.title}
+              onChange={(e) => updateActiveTab({ title: e.target.value })}
+              className="w-24 bg-transparent px-1 py-0.5 text-xs text-foreground placeholder:text-foreground/40 focus:outline-none focus:border-b focus:border-primary/50 transition-colors font-medium"
               data-testid="input-title"
             />
           </div>
           
-          <div className="w-36 relative">
+          <div className="w-28 relative">
              <select 
-               value={language}
+               value={activeTab.language}
                onChange={(e) => handleLanguageChange(e.target.value)}
-               className={`w-full appearance-none bg-card border border-border rounded-sm px-2 py-1 text-xs focus:outline-none focus:border-primary/50 cursor-pointer transition-colors h-7 pl-2 pr-6 ${language ? 'text-foreground' : 'text-muted-foreground'}`}
+               className={`w-full appearance-none bg-card border border-border rounded-sm px-2 py-1 text-xs focus:outline-none focus:border-primary/50 cursor-pointer transition-colors h-7 pl-2 pr-6 ${activeTab.language ? 'text-foreground' : 'text-muted-foreground'}`}
                data-testid="select-language"
              >
-               <option value="">Select Language</option>
+               <option value="">Language</option>
                {languages.map(lang => (
                  <option key={lang.id} value={lang.id}>{lang.name}</option>
                ))}
              </select>
              <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" />
-             {autoDetected && language && (
-               <span className="absolute -bottom-4 left-0 text-[10px] text-primary/70">auto-detected</span>
-             )}
           </div>
 
           <button 
             onClick={() => {
-              setIsPrivate(!isPrivate);
-              if (isPrivate) setPassword("");
+              updateActiveTab({ isPrivate: !activeTab.isPrivate });
+              if (activeTab.isPrivate) updateActiveTab({ password: "" });
             }}
-            className={`h-7 px-3 border rounded-sm flex items-center gap-1.5 text-xs transition-all ${
-              isPrivate 
+            className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
+              activeTab.isPrivate 
                 ? 'border-primary/30 bg-primary/10 text-primary' 
                 : 'border-border bg-card text-muted-foreground hover:text-foreground'
             }`}
             data-testid="button-privacy"
           >
-            {isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
-            <span>{isPrivate ? "Private" : "Public"}</span>
+            {activeTab.isPrivate ? <Lock className="w-3 h-3" /> : <Unlock className="w-3 h-3" />}
           </button>
 
           <AnimatePresence>
-            {isPrivate && (
+            {activeTab.isPrivate && (
               <motion.div
                 initial={{ width: 0, opacity: 0 }}
                 animate={{ width: "auto", opacity: 1 }}
@@ -201,10 +395,10 @@ export default function Home() {
                   <Key className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
                   <input
                     type="password"
-                    placeholder="Password (optional)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="h-7 w-32 pl-7 pr-2 text-xs bg-card border border-border rounded-sm focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/60"
+                    placeholder="Password"
+                    value={activeTab.password}
+                    onChange={(e) => updateActiveTab({ password: e.target.value })}
+                    className="h-7 w-24 pl-7 pr-2 text-xs bg-card border border-border rounded-sm focus:outline-none focus:border-primary/50 placeholder:text-muted-foreground/60"
                     data-testid="input-password"
                   />
                 </div>
@@ -215,25 +409,210 @@ export default function Home() {
           <button 
             onClick={handleSave}
             disabled={saving}
-            className="h-7 px-4 bg-primary text-primary-foreground text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="h-7 px-3 bg-primary text-primary-foreground text-xs font-bold rounded-sm hover:bg-primary/90 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="button-save"
           >
             {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3 h-3" />}
-            {saving ? "Saving..." : "Save"}
+            Save
+          </button>
+
+          <button
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
+              sidebarOpen 
+                ? 'border-primary/30 bg-primary/10 text-primary' 
+                : 'border-border bg-card text-muted-foreground hover:text-foreground'
+            }`}
+            data-testid="button-sidebar-toggle"
+          >
+            <PanelRight className="w-3 h-3" />
           </button>
         </div>
         </FadeIn>
 
-        <div className="flex-1 min-h-0 flex bg-editor-bg">
-          <CodeEditor 
-            initialCode={code} 
-            language={language || "javascript"}
-            onChange={handleCodeChange}
-            title={title || "untitled"}
-            className="flex-1 h-full border-none rounded-none"
-            compact={true}
-          />
+        <div className="flex items-center bg-editor-bg border-b border-border/30 px-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setActiveTabId(tab.id)}
+              className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs border-r border-border/30 transition-colors ${
+                tab.id === activeTabId
+                  ? 'bg-card text-foreground border-t-2 border-t-primary'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-card/50'
+              }`}
+              data-testid={`tab-${tab.id}`}
+            >
+              {tab.hasUnsavedChanges && (
+                <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
+              )}
+              <FileCode className="w-3 h-3" />
+              <span className="max-w-20 truncate">{tab.title || "untitled"}</span>
+              <button
+                onClick={(e) => closeTab(tab.id, e)}
+                className="ml-1 p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-all"
+                data-testid={`close-tab-${tab.id}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </button>
+          ))}
+          {tabs.length < 3 && (
+            <button
+              onClick={addNewTab}
+              className="p-1.5 text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-add-tab"
+            >
+              <Plus className="w-3 h-3" />
+            </button>
+          )}
         </div>
+
+        <div className="flex-1 min-h-0 flex bg-editor-bg">
+          <div className="flex-1 flex">
+            <CodeEditor 
+              initialCode={activeTab.code} 
+              language={activeTab.language || "javascript"}
+              onChange={handleCodeChange}
+              title={activeTab.title || "untitled"}
+              className="flex-1 h-full border-none rounded-none"
+              compact={true}
+            />
+          </div>
+
+          <AnimatePresence>
+            {sidebarOpen && (
+              <motion.div
+                initial={{ width: 0, opacity: 0 }}
+                animate={{ width: 200, opacity: 1 }}
+                exit={{ width: 0, opacity: 0 }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+                className="border-l border-border/50 bg-card overflow-hidden"
+              >
+                <div className="p-3 space-y-4">
+                  <div>
+                    <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">File</h3>
+                    <div className="space-y-1">
+                      <button
+                        onClick={handleOpenFile}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                        data-testid="button-open-file"
+                      >
+                        <FolderOpen className="w-3.5 h-3.5" />
+                        <span>Open File</span>
+                      </button>
+                      <button
+                        onClick={handleNewWindow}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                        data-testid="button-new-window"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5" />
+                        <span className="flex-1 text-left">New Window</span>
+                        <span className="text-[10px] text-muted-foreground/60">Ctrl+L</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-border/50" />
+
+                  <div>
+                    <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Edit</h3>
+                    <div className="space-y-1">
+                      <button
+                        onClick={handleFind}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                        data-testid="button-find"
+                      >
+                        <Search className="w-3.5 h-3.5" />
+                        <span className="flex-1 text-left">Find</span>
+                        <span className="text-[10px] text-muted-foreground/60">Ctrl+F</span>
+                      </button>
+                      <button
+                        onClick={handleFindReplace}
+                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                        data-testid="button-find-replace"
+                      >
+                        <Replace className="w-3.5 h-3.5" />
+                        <span className="flex-1 text-left">Find & Replace</span>
+                        <span className="text-[10px] text-muted-foreground/60">Ctrl+H</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <AnimatePresence>
+          {findDialogOpen && (
+            <motion.div
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="absolute top-24 right-4 bg-card border border-border rounded-md shadow-lg p-3 z-20"
+            >
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Find..."
+                  value={findText}
+                  onChange={(e) => setFindText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && performFind()}
+                  className="w-48 px-2 py-1 text-xs bg-background border border-border rounded-sm focus:outline-none focus:border-primary"
+                  autoFocus
+                  data-testid="input-find"
+                />
+                <Button size="sm" variant="ghost" onClick={performFind} data-testid="button-find-next">
+                  <Search className="w-3 h-3" />
+                </Button>
+                <Button size="sm" variant="ghost" onClick={() => setFindDialogOpen(false)} data-testid="button-close-find">
+                  <X className="w-3 h-3" />
+                </Button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {findReplaceDialogOpen && (
+            <motion.div
+              initial={{ y: -20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -20, opacity: 0 }}
+              className="absolute top-24 right-4 bg-card border border-border rounded-md shadow-lg p-3 z-20"
+            >
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Find..."
+                    value={findText}
+                    onChange={(e) => setFindText(e.target.value)}
+                    className="w-48 px-2 py-1 text-xs bg-background border border-border rounded-sm focus:outline-none focus:border-primary"
+                    autoFocus
+                    data-testid="input-find-replace-find"
+                  />
+                </div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder="Replace..."
+                    value={replaceText}
+                    onChange={(e) => setReplaceText(e.target.value)}
+                    className="w-48 px-2 py-1 text-xs bg-background border border-border rounded-sm focus:outline-none focus:border-primary"
+                    data-testid="input-replace"
+                  />
+                  <Button size="sm" variant="ghost" onClick={performReplace} data-testid="button-replace-all">
+                    <Replace className="w-3 h-3" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => setFindReplaceDialogOpen(false)} data-testid="button-close-replace">
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </PageTransition>
     </Layout>
