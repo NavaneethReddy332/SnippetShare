@@ -8,9 +8,12 @@ SnippetShare is a sleek, minimalistic code snippet sharing platform with a profe
 - Create and share code snippets with syntax highlighting
 - Auto-detect programming language from code content
 - Generate unique shareable links for each snippet
-- Dashboard for managing saved snippets
+- Dashboard for managing saved snippets (user-specific, requires login)
 - Profile management with account settings
 - Project support for multi-file code sharing
+- User authentication with snippets tied to user accounts
+- Private snippets only visible to owners
+- Logged out users redirected from dashboard to home page
 
 ## User Preferences
 
