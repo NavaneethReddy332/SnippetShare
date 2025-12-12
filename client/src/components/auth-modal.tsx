@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/lib/api";
@@ -12,13 +12,13 @@ interface AuthModalProps {
 
 type AuthMode = "login" | "signup";
 
-function GoogleIcon({ className }: { className?: string }) {
+function GoogleIcon() {
   return (
-    <svg className={className} viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+    <svg className="w-4 h-4" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
+      <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+      <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+      <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+      <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
     </svg>
   );
 }
@@ -27,7 +27,21 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
   const [mode, setMode] = useState<AuthMode>("login");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [activePanel, setActivePanel] = useState<AuthMode>("login");
+
+  useEffect(() => {
+    if (isOpen) {
+      const timer = setTimeout(() => setActivePanel(mode), 50);
+      return () => clearTimeout(timer);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setActivePanel(mode), 50);
+    return () => clearTimeout(timer);
+  }, [mode]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,6 +58,11 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
 
     if (password.length < 4) {
       toast.error("Password must be at least 4 characters");
+      return;
+    }
+
+    if (mode === "signup" && password !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -76,117 +95,243 @@ export function AuthModal({ isOpen, onClose, onSuccess }: AuthModalProps) {
     toast.info("Google authentication coming soon");
   };
 
+  const slide = (to: AuthMode) => {
+    setMode(to);
+    setUsername("");
+    setPassword("");
+    setConfirmPassword("");
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
         <ModalBackdrop onClose={onClose}>
           <div 
-            className="bg-[#0a0a0a] border border-[#222] rounded-lg shadow-2xl w-full max-w-xs overflow-hidden"
+            className="w-[340px] h-[480px] bg-black border border-[#333] relative overflow-hidden shadow-2xl"
+            style={{ boxShadow: "0 20px 50px rgba(0,0,0,0.5)" }}
             data-testid="auth-modal"
           >
-            <div className="flex items-center justify-end p-2">
-              <button
-                onClick={onClose}
-                className="p-1 rounded-md hover:bg-[#222] transition-colors text-[#666] hover:text-white"
-                data-testid="button-close-auth"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="px-5 pb-5">
-              <div className="flex gap-6 mb-5">
-                <button
-                  type="button"
-                  onClick={() => setMode("login")}
-                  className={`text-xs font-semibold uppercase tracking-wider pb-1.5 transition-all ${
-                    mode === "login" 
-                      ? "text-white border-b-2 border-white" 
-                      : "text-[#555] hover:text-[#888]"
+            <button
+              onClick={onClose}
+              className="absolute top-4 right-4 z-10 bg-transparent border-none text-[#666] text-2xl cursor-pointer leading-none transition-colors hover:text-white"
+              data-testid="button-close-auth"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            
+            <div 
+              className="flex w-[200%] h-full transition-transform duration-[800ms]"
+              style={{ 
+                transform: mode === "signup" ? "translateX(-50%)" : "translateX(0)",
+                transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)"
+              }}
+            >
+              <div className={`w-1/2 h-full p-10 flex flex-col justify-center ${activePanel === "login" ? "active-panel" : ""}`}>
+                <h2 
+                  className={`text-lg font-normal tracking-wider uppercase mb-6 text-center text-white transition-all duration-[600ms] ${
+                    activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
                   }`}
-                  data-testid="tab-login"
+                  style={{ transitionDelay: activePanel === "login" ? "100ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
                 >
                   Login
-                </button>
+                </h2>
+                
                 <button
                   type="button"
-                  onClick={() => setMode("signup")}
-                  className={`text-xs font-semibold uppercase tracking-wider pb-1.5 transition-all ${
-                    mode === "signup" 
-                      ? "text-white border-b-2 border-white" 
-                      : "text-[#555] hover:text-[#888]"
+                  onClick={handleGoogleClick}
+                  className={`w-full flex items-center justify-center gap-3 py-2.5 bg-white/5 border border-[#333] text-[#ccc] text-[11px] uppercase cursor-pointer transition-all duration-[600ms] mb-5 hover:bg-white/10 hover:border-[#666] ${
+                    activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
                   }`}
-                  data-testid="tab-signup"
+                  style={{ transitionDelay: activePanel === "login" ? "200ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                  data-testid="button-google-auth-login"
                 >
-                  Sign Up
+                  <GoogleIcon />
+                  Google
                 </button>
-              </div>
 
-              <button
-                type="button"
-                onClick={handleGoogleClick}
-                className="w-full flex items-center justify-center gap-2 py-2.5 bg-transparent border border-[#333] rounded-md text-xs font-medium text-[#555] cursor-not-allowed transition-colors mb-4"
-                disabled
-                data-testid="button-google-auth"
-              >
-                <GoogleIcon className="w-4 h-4" />
-                <span>CONTINUE WITH GOOGLE</span>
-              </button>
-
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 h-px bg-[#222]" />
-                <span className="text-[10px] text-[#444] uppercase">Or</span>
-                <div className="flex-1 h-px bg-[#222]" />
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-3">
-                <div>
-                  <label className="block text-xs text-[#666] mb-1.5">
-                    Username
-                  </label>
-                  <input
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    className="w-full px-0 py-1.5 bg-transparent border-0 border-b border-[#333] text-white text-sm focus:outline-none focus:border-[#666] transition-colors placeholder:text-[#444]"
-                    data-testid="input-username"
-                  />
+                <div 
+                  className={`text-center text-[#444] text-[10px] uppercase mb-5 relative transition-all duration-[600ms] ${
+                    activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                  }`}
+                  style={{ transitionDelay: activePanel === "login" ? "300ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                >
+                  <span className="relative z-10 px-2 bg-black">or</span>
+                  <div className="absolute top-1/2 left-0 w-[40%] h-px bg-[#222]" />
+                  <div className="absolute top-1/2 right-0 w-[40%] h-px bg-[#222]" />
                 </div>
 
-                <div>
-                  <label className="block text-xs text-[#666] mb-1.5">
-                    Password
-                  </label>
-                  <input
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full px-0 py-1.5 bg-transparent border-0 border-b border-[#333] text-white text-sm focus:outline-none focus:border-[#666] transition-colors placeholder:text-[#444]"
-                    data-testid="input-password"
-                  />
-                </div>
+                <form onSubmit={handleSubmit}>
+                  <div 
+                    className={`mb-5 transition-all duration-[600ms] ${
+                      activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "login" ? "400ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full bg-transparent border-0 border-b border-[#333] py-2.5 text-white text-sm outline-none rounded-none transition-colors focus:border-white placeholder:text-[#444] placeholder:text-xs"
+                      data-testid="input-username-login"
+                    />
+                  </div>
+                  <div 
+                    className={`mb-5 transition-all duration-[600ms] ${
+                      activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "login" ? "500ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                  >
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-transparent border-0 border-b border-[#333] py-2.5 text-white text-sm outline-none rounded-none transition-colors focus:border-white placeholder:text-[#444] placeholder:text-xs"
+                      data-testid="input-password-login"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`w-full py-3.5 bg-white text-black border-none uppercase font-bold text-[11px] tracking-wider cursor-pointer mt-2.5 transition-all duration-[600ms] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                      activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "login" ? "600ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                    data-testid="button-submit-login"
+                  >
+                    {loading && <Loader2 className="w-3 h-3 animate-spin" />}
+                    Enter System
+                  </button>
+                </form>
+
+                <p 
+                  className={`text-center mt-5 text-[11px] text-[#666] transition-all duration-[600ms] ${
+                    activePanel === "login" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                  }`}
+                  style={{ transitionDelay: activePanel === "login" ? "700ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                >
+                  New here?{" "}
+                  <span 
+                    className="text-white font-bold cursor-pointer ml-1 border-b border-transparent transition-colors hover:border-white"
+                    onClick={() => slide("signup")}
+                    data-testid="link-switch-to-signup"
+                  >
+                    Create Account
+                  </span>
+                </p>
+              </div>
+
+              <div className={`w-1/2 h-full p-10 flex flex-col justify-center ${activePanel === "signup" ? "active-panel" : ""}`}>
+                <h2 
+                  className={`text-lg font-normal tracking-wider uppercase mb-6 text-center text-white transition-all duration-[600ms] ${
+                    activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                  }`}
+                  style={{ transitionDelay: activePanel === "signup" ? "100ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                >
+                  Join
+                </h2>
 
                 <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full py-2.5 bg-white text-black text-xs font-semibold uppercase tracking-wider rounded-md hover:bg-[#e5e5e5] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-4"
-                  data-testid="button-submit-auth"
+                  type="button"
+                  onClick={handleGoogleClick}
+                  className={`w-full flex items-center justify-center gap-3 py-2.5 bg-white/5 border border-[#333] text-[#ccc] text-[11px] uppercase cursor-pointer transition-all duration-[600ms] mb-5 hover:bg-white/10 hover:border-[#666] ${
+                    activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                  }`}
+                  style={{ transitionDelay: activePanel === "signup" ? "200ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                  data-testid="button-google-auth-signup"
                 >
-                  {loading && <Loader2 className="w-3 h-3 animate-spin" />}
-                  {mode === "login" ? "Login" : "Sign Up"}
+                  <GoogleIcon />
+                  Google
                 </button>
 
-                {mode === "login" && (
-                  <button
-                    type="button"
-                    className="w-full text-center text-[10px] text-[#555] hover:text-[#888] transition-colors mt-2"
-                    onClick={() => toast.info("Password reset coming soon")}
-                    data-testid="button-forgot-password"
+                <div 
+                  className={`text-center text-[#444] text-[10px] uppercase mb-5 relative transition-all duration-[600ms] ${
+                    activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                  }`}
+                  style={{ transitionDelay: activePanel === "signup" ? "300ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                >
+                  <span className="relative z-10 px-2 bg-black">or</span>
+                  <div className="absolute top-1/2 left-0 w-[40%] h-px bg-[#222]" />
+                  <div className="absolute top-1/2 right-0 w-[40%] h-px bg-[#222]" />
+                </div>
+
+                <form onSubmit={handleSubmit}>
+                  <div 
+                    className={`mb-5 transition-all duration-[600ms] ${
+                      activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "signup" ? "400ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
                   >
-                    Forgot password?
+                    <input
+                      type="text"
+                      placeholder="Pick Username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      className="w-full bg-transparent border-0 border-b border-[#333] py-2.5 text-white text-sm outline-none rounded-none transition-colors focus:border-white placeholder:text-[#444] placeholder:text-xs"
+                      data-testid="input-username-signup"
+                    />
+                  </div>
+                  <div 
+                    className={`mb-5 transition-all duration-[600ms] ${
+                      activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "signup" ? "500ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                  >
+                    <input
+                      type="password"
+                      placeholder="Create Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-transparent border-0 border-b border-[#333] py-2.5 text-white text-sm outline-none rounded-none transition-colors focus:border-white placeholder:text-[#444] placeholder:text-xs"
+                      data-testid="input-password-signup"
+                    />
+                  </div>
+                  <div 
+                    className={`mb-5 transition-all duration-[600ms] ${
+                      activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "signup" ? "600ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                  >
+                    <input
+                      type="password"
+                      placeholder="Confirm Password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="w-full bg-transparent border-0 border-b border-[#333] py-2.5 text-white text-sm outline-none rounded-none transition-colors focus:border-white placeholder:text-[#444] placeholder:text-xs"
+                      data-testid="input-confirm-password-signup"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className={`w-full py-3.5 bg-white text-black border-none uppercase font-bold text-[11px] tracking-wider cursor-pointer mt-2.5 transition-all duration-[600ms] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                      activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                    }`}
+                    style={{ transitionDelay: activePanel === "signup" ? "700ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                    data-testid="button-submit-signup"
+                  >
+                    {loading && <Loader2 className="w-3 h-3 animate-spin" />}
+                    Initialize
                   </button>
-                )}
-              </form>
+                </form>
+
+                <p 
+                  className={`text-center mt-5 text-[11px] text-[#666] transition-all duration-[600ms] ${
+                    activePanel === "signup" ? "opacity-100 translate-y-0" : "opacity-0 translate-y-5"
+                  }`}
+                  style={{ transitionDelay: activePanel === "signup" ? "800ms" : "0ms", transitionTimingFunction: "cubic-bezier(0.19, 1, 0.22, 1)" }}
+                >
+                  Existing user?{" "}
+                  <span 
+                    className="text-white font-bold cursor-pointer ml-1 border-b border-transparent transition-colors hover:border-white"
+                    onClick={() => slide("login")}
+                    data-testid="link-switch-to-login"
+                  >
+                    Log In
+                  </span>
+                </p>
+              </div>
             </div>
           </div>
         </ModalBackdrop>
