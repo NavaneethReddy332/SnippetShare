@@ -2,9 +2,9 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout";
 import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
-import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
+import { detectLanguage, languages, getExtension, isWebLanguage, isRunnableLanguage, needsPreview, canRunInBrowser } from "@/lib/language-detect";
 import { useLocation, useSearch } from "wouter";
-import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key, X, PanelRight, FolderOpen, ExternalLink, Search, Replace, GripVertical } from "lucide-react";
+import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key, X, PanelRight, FolderOpen, ExternalLink, Search, Replace, MoreVertical, Play, Package, Terminal, ChevronUp, XCircle, Check, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 import { PageTransition, FadeIn } from "@/components/animations";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,9 +14,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
-  DropdownMenuLabel,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
+import {
+  ResizablePanelGroup,
+  ResizablePanel,
+  ResizableHandle,
+} from "@/components/ui/resizable";
 
 interface TabData {
   id: string;
@@ -27,6 +31,12 @@ interface TabData {
   password: string;
   autoDetected: boolean;
   hasUnsavedChanges: boolean;
+}
+
+interface OutputLine {
+  type: 'log' | 'error' | 'warn' | 'info' | 'result';
+  content: string;
+  timestamp: number;
 }
 
 const TABS_STORAGE_KEY = 'snippetshare_tabs';
@@ -87,7 +97,18 @@ export default function Home() {
   const initialLoad = useRef(true);
   const tabInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
+  const [outputOpen, setOutputOpen] = useState(false);
+  const [outputLines, setOutputLines] = useState<OutputLine[]>([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(true);
+  const previewIframeRef = useRef<HTMLIFrameElement>(null);
+  const outputRef = useRef<HTMLDivElement>(null);
+  
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
+  const isWebCode = isWebLanguage(activeTab.language);
+  const showsPreview = needsPreview(activeTab.language);
+  const isJavaScript = activeTab.language === 'javascript';
+  const isTypeScript = activeTab.language === 'typescript';
   
   const updateActiveTab = (updates: Partial<TabData>) => {
     setTabs(prev => prev.map(tab => 
@@ -122,7 +143,6 @@ export default function Home() {
     }
   }, [activeTab.code, activeTab.title]);
 
-  // Save tabs to localStorage whenever they change
   useEffect(() => {
     try {
       localStorage.setItem(TABS_STORAGE_KEY, JSON.stringify(tabs));
@@ -131,6 +151,77 @@ export default function Home() {
       console.error('Failed to save tabs to storage:', e);
     }
   }, [tabs, activeTabId]);
+
+  useEffect(() => {
+    if (showsPreview && previewOpen && previewIframeRef.current) {
+      updatePreview();
+    }
+  }, [activeTab.code, activeTab.language, showsPreview, previewOpen]);
+
+  useEffect(() => {
+    if (outputRef.current) {
+      outputRef.current.scrollTop = outputRef.current.scrollHeight;
+    }
+  }, [outputLines]);
+
+  const updatePreview = useCallback(() => {
+    if (!previewIframeRef.current) return;
+    
+    const iframe = previewIframeRef.current;
+    let htmlContent = activeTab.code;
+    
+    if (activeTab.language === 'javascript') {
+      htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>body { font-family: system-ui, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }</style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    const originalConsole = console;
+    const sendMessage = (type, ...args) => {
+      parent.postMessage({ type: 'console', method: type, args: args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)) }, '*');
+    };
+    console = {
+      log: (...args) => { sendMessage('log', ...args); originalConsole.log(...args); },
+      error: (...args) => { sendMessage('error', ...args); originalConsole.error(...args); },
+      warn: (...args) => { sendMessage('warn', ...args); originalConsole.warn(...args); },
+      info: (...args) => { sendMessage('info', ...args); originalConsole.info(...args); },
+    };
+    window.onerror = (msg, url, line) => {
+      sendMessage('error', msg + ' (line ' + line + ')');
+    };
+    try {
+      ${activeTab.code}
+    } catch(e) {
+      console.error(e.message);
+    }
+  </script>
+</body>
+</html>`;
+    } else if (activeTab.language === 'css') {
+      htmlContent = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>${activeTab.code}</style>
+</head>
+<body>
+  <div class="demo-container">
+    <h1>CSS Preview</h1>
+    <p>This is a paragraph to test your CSS styles.</p>
+    <button>Button</button>
+    <div class="box">Box Element</div>
+    <ul><li>List Item 1</li><li>List Item 2</li></ul>
+  </div>
+</body>
+</html>`;
+    }
+    
+    iframe.srcdoc = htmlContent;
+  }, [activeTab.code, activeTab.language]);
 
   const handleCodeChange = useCallback((newCode: string) => {
     const tab = tabs.find(t => t.id === activeTabId);
@@ -189,6 +280,70 @@ export default function Home() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRun = useCallback(() => {
+    if (!activeTab.code.trim()) {
+      toast.error("Enter some code first");
+      return;
+    }
+
+    setOutputLines([]);
+    setIsRunning(true);
+    setOutputOpen(true);
+    addOutputLine('info', `Running ${activeTab.language} code...`);
+    
+    if (isTypeScript) {
+      addOutputLine('warn', 'TypeScript requires transpilation to run.');
+      addOutputLine('info', 'Server-side TypeScript execution is coming soon.');
+      setIsRunning(false);
+      return;
+    }
+    
+    if (isWebCode) {
+      setPreviewOpen(true);
+      updatePreview();
+      setTimeout(() => {
+        setIsRunning(false);
+        addOutputLine('result', 'Preview updated');
+      }, 300);
+    } else if (isJavaScript) {
+      setPreviewOpen(true);
+      updatePreview();
+      
+      setTimeout(() => {
+        setIsRunning(false);
+        addOutputLine('result', 'JavaScript executed in preview. Console output captured above.');
+      }, 500);
+    } else {
+      setTimeout(() => {
+        addOutputLine('warn', `Server-side execution for ${activeTab.language} requires backend support`);
+        addOutputLine('info', 'This feature is coming soon. Web languages (HTML, CSS, JS) run in the browser preview.');
+        setIsRunning(false);
+        addOutputLine('result', 'Execution complete');
+      }, 500);
+    }
+  }, [activeTab, isWebCode, isJavaScript, isTypeScript, updatePreview]);
+
+  const addOutputLine = (type: OutputLine['type'], content: string) => {
+    setOutputLines(prev => [...prev, { type, content, timestamp: Date.now() }]);
+  };
+
+  const handleInstallDependencies = () => {
+    toast.info("Package installation coming soon!");
+  };
+
+  const handleFind = () => {
+    setFindDialogOpen(true);
+    setFindReplaceDialogOpen(false);
+    setSidebarOpen(false);
+    setLastFindIndex(-1);
+  };
+
+  const handleFindReplace = () => {
+    setFindReplaceDialogOpen(true);
+    setFindDialogOpen(false);
+    setSidebarOpen(false);
   };
 
   const addNewTab = () => {
@@ -359,19 +514,6 @@ export default function Home() {
     window.open(window.location.origin, '_blank');
   };
 
-  const handleFind = () => {
-    setFindDialogOpen(true);
-    setFindReplaceDialogOpen(false);
-    setSidebarOpen(false);
-    setLastFindIndex(-1);
-  };
-
-  const handleFindReplace = () => {
-    setFindReplaceDialogOpen(true);
-    setFindDialogOpen(false);
-    setSidebarOpen(false);
-  };
-
   const performFind = () => {
     if (!findText) return;
     const textarea = document.querySelector('[data-testid="textarea-code"]') as HTMLTextAreaElement;
@@ -407,6 +549,10 @@ export default function Home() {
     toast.success("Replaced all occurrences");
   };
 
+  const clearOutput = () => {
+    setOutputLines([]);
+  };
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'l') {
@@ -421,10 +567,27 @@ export default function Home() {
         e.preventDefault();
         handleFindReplace();
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        handleRun();
+      }
     };
     
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleRun]);
+
+  useEffect(() => {
+    const handleMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'console') {
+        const method = e.data.method as OutputLine['type'];
+        const content = e.data.args?.join(' ') || '';
+        addOutputLine(method, content);
+      }
+    };
+    
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
   }, []);
 
   const displayLanguage = activeTab.language 
@@ -616,6 +779,39 @@ export default function Home() {
               Save
             </button>
 
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  className="h-7 px-2 border border-border bg-card rounded-sm flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                  data-testid="button-more-menu"
+                >
+                  <MoreVertical className="w-3 h-3" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuItem onClick={handleRun} disabled={isRunning} data-testid="menu-run">
+                  <Play className="w-4 h-4 mr-2" />
+                  <span>Run</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">Ctrl+Enter</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleInstallDependencies} data-testid="menu-install-deps">
+                  <Package className="w-4 h-4 mr-2" />
+                  <span>Install Dependencies</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleFind} data-testid="menu-find">
+                  <Search className="w-4 h-4 mr-2" />
+                  <span>Find</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">Ctrl+F</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleFindReplace} data-testid="menu-replace">
+                  <Replace className="w-4 h-4 mr-2" />
+                  <span>Replace</span>
+                  <span className="ml-auto text-[10px] text-muted-foreground">Ctrl+H</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className={`h-7 px-2 border rounded-sm flex items-center gap-1 text-xs transition-all ${
@@ -631,80 +827,226 @@ export default function Home() {
         </div>
         </FadeIn>
 
-        <div className="flex-1 min-h-0 flex bg-editor-bg">
-          <div className="flex-1 flex">
-            <CodeEditor 
-              initialCode={activeTab.code} 
-              language={activeTab.language || "javascript"}
-              onChange={handleCodeChange}
-              title={activeTab.title || "untitled"}
-              className="flex-1 h-full border-none rounded-none"
-              compact={true}
-            />
-          </div>
+        <div className="flex-1 min-h-0 flex flex-col bg-editor-bg">
+          <ResizablePanelGroup direction="vertical" className="flex-1">
+            <ResizablePanel defaultSize={outputOpen ? 70 : 100} minSize={30}>
+              <div className="h-full flex">
+                {showsPreview ? (
+                  <ResizablePanelGroup direction="horizontal" className="flex-1">
+                    <ResizablePanel defaultSize={previewOpen ? 50 : 100} minSize={30}>
+                      <CodeEditor 
+                        initialCode={activeTab.code} 
+                        language={activeTab.language || "javascript"}
+                        onChange={handleCodeChange}
+                        title={activeTab.title || "untitled"}
+                        className="h-full border-none rounded-none"
+                        compact={true}
+                      />
+                    </ResizablePanel>
+                    
+                    {previewOpen && (
+                      <>
+                        <ResizableHandle withHandle />
+                        <ResizablePanel defaultSize={50} minSize={20}>
+                          <div className="h-full flex flex-col bg-card">
+                            <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-panel-header-bg">
+                              <div className="flex items-center gap-2">
+                                <Eye className="w-3 h-3 text-muted-foreground" />
+                                <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Preview</span>
+                              </div>
+                              <button
+                                onClick={() => setPreviewOpen(false)}
+                                className="p-1 text-muted-foreground hover:text-foreground rounded-sm transition-colors"
+                                data-testid="button-close-preview"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </div>
+                            <div className="flex-1 bg-white dark:bg-[#1a1a1a]">
+                              <iframe
+                                ref={previewIframeRef}
+                                sandbox="allow-scripts allow-modals"
+                                className="w-full h-full border-none"
+                                title="Preview"
+                                data-testid="iframe-preview"
+                              />
+                            </div>
+                          </div>
+                        </ResizablePanel>
+                      </>
+                    )}
+                  </ResizablePanelGroup>
+                ) : (
+                  <CodeEditor 
+                    initialCode={activeTab.code} 
+                    language={activeTab.language || "javascript"}
+                    onChange={handleCodeChange}
+                    title={activeTab.title || "untitled"}
+                    className="flex-1 h-full border-none rounded-none"
+                    compact={true}
+                  />
+                )}
 
-          <AnimatePresence>
-            {sidebarOpen && (
-              <motion.div
-                initial={{ width: 0, opacity: 0 }}
-                animate={{ width: 200, opacity: 1 }}
-                exit={{ width: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="border-l border-border/50 bg-card overflow-hidden"
-              >
-                <div className="p-3 space-y-4">
-                  <div>
-                    <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">File</h3>
-                    <div className="space-y-1">
-                      <button
-                        onClick={handleOpenFile}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
-                        data-testid="button-open-file"
-                      >
-                        <FolderOpen className="w-3.5 h-3.5" />
-                        <span>Open File</span>
-                      </button>
-                      <button
-                        onClick={handleNewWindow}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
-                        data-testid="button-new-window"
-                      >
-                        <ExternalLink className="w-3.5 h-3.5" />
-                        <span className="flex-1 text-left">New Window</span>
-                        <span className="text-[10px] text-muted-foreground/60">Ctrl+L</span>
-                      </button>
+                <AnimatePresence>
+                  {sidebarOpen && (
+                    <motion.div
+                      initial={{ width: 0, opacity: 0 }}
+                      animate={{ width: 200, opacity: 1 }}
+                      exit={{ width: 0, opacity: 0 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="border-l border-border/50 bg-card overflow-hidden"
+                    >
+                      <div className="p-3 space-y-4">
+                        <div>
+                          <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">File</h3>
+                          <div className="space-y-1">
+                            <button
+                              onClick={handleOpenFile}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                              data-testid="button-open-file"
+                            >
+                              <FolderOpen className="w-3.5 h-3.5" />
+                              <span>Open File</span>
+                            </button>
+                            <button
+                              onClick={handleNewWindow}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                              data-testid="button-new-window"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                              <span className="flex-1 text-left">New Window</span>
+                              <span className="text-[10px] text-muted-foreground/60">Ctrl+L</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="h-px bg-border/50" />
+
+                        <div>
+                          <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Run</h3>
+                          <div className="space-y-1">
+                            <button
+                              onClick={handleRun}
+                              disabled={isRunning}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors disabled:opacity-50"
+                              data-testid="button-run-sidebar"
+                            >
+                              <Play className="w-3.5 h-3.5" />
+                              <span className="flex-1 text-left">Run Code</span>
+                              <span className="text-[10px] text-muted-foreground/60">Ctrl+Enter</span>
+                            </button>
+                            {showsPreview && (
+                              <button
+                                onClick={() => setPreviewOpen(!previewOpen)}
+                                className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                                data-testid="button-toggle-preview"
+                              >
+                                {previewOpen ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                <span>{previewOpen ? 'Hide Preview' : 'Show Preview'}</span>
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setOutputOpen(!outputOpen)}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                              data-testid="button-toggle-output"
+                            >
+                              <Terminal className="w-3.5 h-3.5" />
+                              <span>{outputOpen ? 'Hide Output' : 'Show Output'}</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        <div className="h-px bg-border/50" />
+
+                        <div>
+                          <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Edit</h3>
+                          <div className="space-y-1">
+                            <button
+                              onClick={handleFind}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                              data-testid="button-find"
+                            >
+                              <Search className="w-3.5 h-3.5" />
+                              <span className="flex-1 text-left">Find</span>
+                              <span className="text-[10px] text-muted-foreground/60">Ctrl+F</span>
+                            </button>
+                            <button
+                              onClick={handleFindReplace}
+                              className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
+                              data-testid="button-find-replace"
+                            >
+                              <Replace className="w-3.5 h-3.5" />
+                              <span className="flex-1 text-left">Find & Replace</span>
+                              <span className="text-[10px] text-muted-foreground/60">Ctrl+H</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </ResizablePanel>
+
+            {outputOpen && (
+              <>
+                <ResizableHandle withHandle />
+                <ResizablePanel defaultSize={30} minSize={10} maxSize={60}>
+                  <div className="h-full flex flex-col bg-card border-t border-border/50">
+                    <div className="flex items-center justify-between px-3 py-1.5 border-b border-border/50 bg-panel-header-bg">
+                      <div className="flex items-center gap-2">
+                        <Terminal className="w-3 h-3 text-muted-foreground" />
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">Output</span>
+                        {isRunning && <Loader2 className="w-3 h-3 animate-spin text-primary" />}
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={clearOutput}
+                          className="p-1 text-muted-foreground hover:text-foreground rounded-sm transition-colors"
+                          title="Clear Output"
+                          data-testid="button-clear-output"
+                        >
+                          <XCircle className="w-3 h-3" />
+                        </button>
+                        <button
+                          onClick={() => setOutputOpen(false)}
+                          className="p-1 text-muted-foreground hover:text-foreground rounded-sm transition-colors"
+                          data-testid="button-close-output"
+                        >
+                          <ChevronDown className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </div>
+                    <div 
+                      ref={outputRef}
+                      className="flex-1 overflow-auto p-2 font-mono text-xs space-y-0.5"
+                      data-testid="output-panel"
+                    >
+                      {outputLines.length === 0 ? (
+                        <div className="text-muted-foreground/50 italic">Run your code to see output here...</div>
+                      ) : (
+                        outputLines.map((line, i) => (
+                          <div 
+                            key={i} 
+                            className={`flex items-start gap-2 ${
+                              line.type === 'error' ? 'text-red-400' :
+                              line.type === 'warn' ? 'text-yellow-400' :
+                              line.type === 'info' ? 'text-blue-400' :
+                              line.type === 'result' ? 'text-green-400' :
+                              'text-foreground'
+                            }`}
+                          >
+                            <span className="text-muted-foreground/40 select-none w-4">{i + 1}</span>
+                            <span className="whitespace-pre-wrap break-all">{line.content}</span>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
-
-                  <div className="h-px bg-border/50" />
-
-                  <div>
-                    <h3 className="text-xs font-semibold text-foreground mb-2 uppercase tracking-wider">Edit</h3>
-                    <div className="space-y-1">
-                      <button
-                        onClick={handleFind}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
-                        data-testid="button-find"
-                      >
-                        <Search className="w-3.5 h-3.5" />
-                        <span className="flex-1 text-left">Find</span>
-                        <span className="text-[10px] text-muted-foreground/60">Ctrl+F</span>
-                      </button>
-                      <button
-                        onClick={handleFindReplace}
-                        className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-muted-foreground hover:text-foreground hover:bg-muted rounded-sm transition-colors"
-                        data-testid="button-find-replace"
-                      >
-                        <Replace className="w-3.5 h-3.5" />
-                        <span className="flex-1 text-left">Find & Replace</span>
-                        <span className="text-[10px] text-muted-foreground/60">Ctrl+H</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
+                </ResizablePanel>
+              </>
             )}
-          </AnimatePresence>
+          </ResizablePanelGroup>
         </div>
 
         <AnimatePresence>
