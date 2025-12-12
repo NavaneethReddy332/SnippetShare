@@ -4,7 +4,7 @@ import { CodeEditor } from "@/components/code-editor";
 import { api } from "@/lib/api";
 import { detectLanguage, languages, getExtension } from "@/lib/language-detect";
 import { useLocation, useSearch } from "wouter";
-import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key, X, PanelRight, FolderOpen, ExternalLink, Search, Replace } from "lucide-react";
+import { Lock, Unlock, ChevronDown, Plus, FileCode, FolderKanban, Loader2, Circle, Key, X, PanelRight, FolderOpen, ExternalLink, Search, Replace, GripVertical } from "lucide-react";
 import { toast } from "sonner";
 import { PageTransition, FadeIn } from "@/components/animations";
 import { motion, AnimatePresence } from "framer-motion";
@@ -79,8 +79,13 @@ export default function Home() {
   const [findText, setFindText] = useState("");
   const [replaceText, setReplaceText] = useState("");
   const [lastFindIndex, setLastFindIndex] = useState(-1);
+  const [editingTabId, setEditingTabId] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [draggedTabId, setDraggedTabId] = useState<string | null>(null);
+  const [dragOverTabId, setDragOverTabId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initialLoad = useRef(true);
+  const tabInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
   
   const activeTab = tabs.find(t => t.id === activeTabId) || tabs[0];
   
@@ -194,6 +199,79 @@ export default function Home() {
     const newTab = createNewTab();
     setTabs(prev => [...prev, newTab]);
     setActiveTabId(newTab.id);
+  };
+
+  const handleTabClick = (tabId: string) => {
+    if (editingTabId !== tabId) {
+      setActiveTabId(tabId);
+    }
+  };
+
+  const handleTabDoubleClick = (tabId: string) => {
+    setEditingTabId(tabId);
+    setActiveTabId(tabId);
+    setTimeout(() => {
+      tabInputRefs.current[tabId]?.focus();
+      tabInputRefs.current[tabId]?.select();
+    }, 0);
+  };
+
+  const handleTabInputBlur = () => {
+    setEditingTabId(null);
+  };
+
+  const handleTabInputKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === 'Escape') {
+      setEditingTabId(null);
+    }
+  };
+
+  const handleDragStart = (e: React.DragEvent, tabId: string) => {
+    setIsDragging(true);
+    setDraggedTabId(tabId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', tabId);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+    setDraggedTabId(null);
+    setDragOverTabId(null);
+  };
+
+  const handleDragOver = (e: React.DragEvent, tabId: string) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    if (tabId !== draggedTabId) {
+      setDragOverTabId(tabId);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setDragOverTabId(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetTabId: string) => {
+    e.preventDefault();
+    const sourceTabId = e.dataTransfer.getData('text/plain');
+    
+    if (sourceTabId && sourceTabId !== targetTabId) {
+      setTabs(prev => {
+        const sourceIndex = prev.findIndex(t => t.id === sourceTabId);
+        const targetIndex = prev.findIndex(t => t.id === targetTabId);
+        
+        if (sourceIndex === -1 || targetIndex === -1) return prev;
+        
+        const newTabs = [...prev];
+        const [removed] = newTabs.splice(sourceIndex, 1);
+        newTabs.splice(targetIndex, 0, removed);
+        return newTabs;
+      });
+    }
+    
+    setIsDragging(false);
+    setDraggedTabId(null);
+    setDragOverTabId(null);
   };
 
   const closeTab = (tabId: string, e: React.MouseEvent) => {
@@ -366,7 +444,11 @@ export default function Home() {
         />
         
         <FadeIn>
-          <div className="flex items-center gap-2 p-2 border-b border-border/50 bg-editor-bg z-10">
+          <div className={`flex items-center gap-2 p-2 border-b z-10 transition-colors duration-200 ${
+            isDragging 
+              ? 'bg-green-500/20 border-green-500/50' 
+              : 'border-border/50 bg-editor-bg'
+          }`}>
           
           <div className="flex bg-card border border-border rounded-sm p-0.5">
              <button 
@@ -400,30 +482,48 @@ export default function Home() {
                     ease: "easeOut",
                     layout: { duration: 0.2 }
                   }}
-                  onClick={() => setActiveTabId(tab.id)}
-                  className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer transition-colors border-b-2 ${
+                  draggable
+                  onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, tab.id)}
+                  onDragEnd={handleDragEnd}
+                  onDragOver={(e) => handleDragOver(e as unknown as React.DragEvent, tab.id)}
+                  onDragLeave={handleDragLeave}
+                  onDrop={(e) => handleDrop(e as unknown as React.DragEvent, tab.id)}
+                  onClick={() => handleTabClick(tab.id)}
+                  onDoubleClick={() => handleTabDoubleClick(tab.id)}
+                  className={`group flex items-center gap-1.5 px-3 py-1.5 text-xs cursor-pointer transition-all border-b-2 select-none ${
                     tab.id === activeTabId
                       ? 'bg-card text-foreground border-b-primary'
                       : 'text-muted-foreground hover:text-foreground hover:bg-card/50 border-b-transparent'
+                  } ${draggedTabId === tab.id ? 'opacity-50' : ''} ${
+                    dragOverTabId === tab.id ? 'border-l-2 border-l-green-500' : ''
                   }`}
                   data-testid={`tab-${tab.id}`}
                 >
                   {tab.hasUnsavedChanges && (
                     <Circle className="w-1.5 h-1.5 fill-primary text-primary" />
                   )}
-                  <input
-                    type="text"
-                    value={tab.title || ""}
-                    placeholder="Untitled"
-                    onChange={(e) => {
-                      if (tab.id === activeTabId) {
-                        updateActiveTab({ title: e.target.value });
-                      }
-                    }}
-                    onClick={(e) => e.stopPropagation()}
-                    className="w-20 bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground"
-                    data-testid={`input-tab-title-${tab.id}`}
-                  />
+                  {editingTabId === tab.id ? (
+                    <input
+                      ref={(el) => { tabInputRefs.current[tab.id] = el; }}
+                      type="text"
+                      value={tab.title || ""}
+                      placeholder="Untitled"
+                      onChange={(e) => {
+                        setTabs(prev => prev.map(t => 
+                          t.id === tab.id ? { ...t, title: e.target.value } : t
+                        ));
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      onBlur={handleTabInputBlur}
+                      onKeyDown={handleTabInputKeyDown}
+                      className="w-20 bg-transparent text-[11px] focus:outline-none placeholder:text-muted-foreground border-b border-primary"
+                      data-testid={`input-tab-title-${tab.id}`}
+                    />
+                  ) : (
+                    <span className="w-20 text-[11px] truncate">
+                      {tab.title || "Untitled"}
+                    </span>
+                  )}
                   <motion.button
                     onClick={(e) => closeTab(tab.id, e)}
                     className="p-0.5 rounded-sm opacity-0 group-hover:opacity-100 hover:bg-muted transition-opacity"
